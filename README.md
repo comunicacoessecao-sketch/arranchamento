@@ -61,12 +61,15 @@ Daí em diante, toda alteração enviada ao GitHub republica o site sozinho.
 
 ## Passo 4 — Virar administrador
 
-1. Abra o link do site, clique em **Criar acesso** e cadastre-se com o seu
-   número de guerra.
-2. Volte ao Supabase → **SQL Editor** e rode (trocando `123` pelo seu número):
+1. Abra o link do site, clique em **Criar acesso** e cadastre-se. Cabos e
+   soldados entram pelo número de guerra; sargentos e acima, pelo nome de
+   guerra (ver "Quem pode se cadastrar").
+2. Volte ao Supabase → **SQL Editor** e rode, trocando `123` pela sua
+   identificação — o número, ou o nome de guerra em minúsculas e sem acento
+   (`borges`, `letica.rangel`):
 
 ```sql
-update militares set admin = true where numero_guerra = '123';
+update militares set admin = true where identificador = '123';
 ```
 
 3. Recarregue o site. O link **Painel** vai aparecer.
@@ -95,9 +98,10 @@ Acesse http://localhost:3000
 
 ## Como funciona no dia a dia
 
-**Para o militar:** abre o link no celular, entra com número de guerra e senha,
-marca as refeições e toca em *Enviar*. Pode alterar e reenviar quantas vezes
-quiser até o prazo.
+**Para o militar:** abre o link no celular, entra com a identificação (número
+de guerra, ou nome de guerra para sargento e acima) e a senha, marca as
+refeições e toca em *Enviar*. Pode alterar e reenviar quantas vezes quiser até
+o prazo.
 
 **Para a seção:** o administrador abre o *Painel*, escolhe o dia e vê os totais
 por categoria (Café / Almoço / Janta separados = etapas reduzidas; a soma =
@@ -148,9 +152,21 @@ ele digita.
 
 ## Quem pode se cadastrar
 
-Só quem estiver na tabela `autorizados`. O militar informa o número de guerra,
+Só quem estiver na tabela `autorizados`. O militar informa como se identifica,
 o site confere na relação e, se achar, mostra o nome e o posto e pede apenas
 uma senha — ele não digita mais os próprios dados.
+
+**Como cada um se identifica:**
+
+| Quem | Digita |
+|---|---|
+| Cabos e soldados (EP e EV) | o **número de guerra** — 106, 231, 409… |
+| Sargentos, subtenentes e oficiais | o **nome de guerra** — BORGES, GOESTEMEIER… |
+
+Isso porque de sargento para cima não existe número de guerra. O que fica
+gravado é uma forma reduzida do que foi digitado (minúsculas, sem acento,
+espaços viram ponto), então "Letíca Rangel", "LETICA RANGEL" e "letica rangel"
+dão todos em `letica.rangel` — o militar não precisa acertar a grafia exata.
 
 **Para ligar isso** (uma vez só, num projeto que já rodou o `schema.sql`):
 
@@ -168,29 +184,37 @@ npm run autorizados
 
 3. Abra o arquivo, confira a relação e cole no SQL Editor.
 
-**Oficiais e graduados precisam de atenção.** A planilha do Rancho lista essa
-turma só por posto e nome de guerra — o número não está lá. Eles saem num
-bloco comentado no fim do arquivo, com `'NUMERO'` no lugar do número. Preencha,
-descomente e rode. Enquanto isso não for feito, eles não conseguem criar acesso.
+O gerador avisa se dois militares dessem no mesmo identificador (dois BORGES
+sem número, por exemplo). Nesse caso só o primeiro entra, e o outro fica
+listado num comentário no fim do arquivo para você diferenciar à mão.
 
 **Para incluir alguém depois** (militar novo na companhia), no SQL Editor:
 
 ```sql
-insert into autorizados (numero_guerra, nome, posto_grad, categoria, bloco)
-values ('231', 'BORGES', '3º SGT', 'Subten/Sgt', 'subtenSgt');
+insert into autorizados (identificador, numero_guerra, nome, posto_grad, categoria, bloco, ordem)
+values ('borges', null, 'BORGES', '3º SGT', 'Subten/Sgt', 'subtenSgt', 20);
+```
+
+Para um soldado, o identificador é o próprio número:
+
+```sql
+insert into autorizados (identificador, numero_guerra, nome, posto_grad, categoria, bloco, ordem)
+values ('231', '231', 'LEONAN', 'SD', 'Cabo/Sd', 'sdEp', 62);
 ```
 
 O `bloco` diz em que parte da planilha a pessoa entra: `oficial`, `subtenSgt`,
-`cabo`, `sdEp` ou `sdEv`.
+`cabo`, `sdEp` ou `sdEv`. O `ordem` é a posição na relação nominal — é o que
+mantém oficiais e graduados na precedência de posto, já que eles não têm
+número para ordenar.
 
 **Para tirar alguém** que saiu da companhia:
 
 ```sql
-delete from autorizados where numero_guerra = '231';
+delete from autorizados where identificador = 'borges';
 ```
 
-Isso impede novos cadastros com esse número, mas não apaga quem já tem acesso —
-para isso, Supabase → **Authentication** → **Users** → **Delete user**.
+Isso impede novos cadastros, mas não apaga quem já tem acesso — para isso,
+Supabase → **Authentication** → **Users** → **Delete user**.
 
 ## Observações de segurança
 

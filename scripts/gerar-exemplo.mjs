@@ -48,15 +48,18 @@ const SD_EP = [
 const militares = [];
 let n = 0;
 const novo = (extra) => {
-  militares.push({ id: `m${++n}`, ...extra });
+  // "ordem" imita a posicao na relacao do formulario, que e o que ordena
+  // oficiais e graduados — eles nao tem numero de guerra.
+  militares.push({ id: `m${++n}`, ordem: n, ...extra });
 };
 
-OFICIAIS.forEach(([pg, nome, num]) =>
-  novo({ numero_guerra: num, posto_grad: pg, nome, categoria: "Oficial", tipo_sd: null, bloco: "oficial" })
+// De sargento para cima nao ha numero de guerra — so nome de guerra.
+OFICIAIS.forEach(([pg, nome]) =>
+  novo({ numero_guerra: null, posto_grad: pg, nome, categoria: "Oficial", tipo_sd: null, bloco: "oficial" })
 );
-GRADUADOS.forEach(([pg, nome], i) =>
+GRADUADOS.forEach(([pg, nome]) =>
   novo({
-    numero_guerra: String(300 + i),
+    numero_guerra: null,
     posto_grad: pg,
     nome,
     categoria: "Subten/Sgt",

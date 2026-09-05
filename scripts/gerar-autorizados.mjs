@@ -65,8 +65,20 @@ async function acharModelo() {
   return path.join(PASTA_MODELO, xlsx);
 }
 
+// Mesma regra do site (lib/supabase.js): minusculas, sem acento, espacos
+// e sinais viram ponto. Repetida aqui porque este script roda sozinho.
+function normalizarIdentificador(valor) {
+  return String(valor || "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ".")
+    .replace(/^\.+|\.+$/g, "");
+}
+
 const pessoas = [];
-const semNumero = [];
+const semNome = [];
+let ordem = 0;
 
 const caminho = await acharModelo();
 const pasta = new ExcelJS.Workbook();
@@ -84,86 +96,140 @@ for (let l = PRIMEIRA; l <= ULTIMA; l++) {
   if (chave === "CABOS" || chave === "CABO") { grupo = "cabo"; continue; }
 
   if (grupo === "cabo") {
+    // Cabos aparecem como "106 CARVALHO": tem numero de guerra.
     const { numero, nome } = separarNumero(valor);
-    const pessoa = { numero, nome, posto: "CB", categoria: "Cabo/Sd", bloco: "cabo" };
-    (numero ? pessoas : semNumero).push(pessoa);
+    pessoas.push({
+      identificador: normalizarIdentificador(numero || nome),
+      numero,
+      nome,
+      ordem: ++ordem,
+      posto: "CB",
+      categoria: "Cabo/Sd",
+      bloco: "cabo",
+    });
   } else {
+    // De sargento para cima nao ha numero de guerra: a identificacao e o
+    // proprio nome de guerra.
     const { posto, nome } = separarPosto(valor);
-    // Oficiais e graduados aparecem na planilha so pelo posto e nome de
-    // guerra — o numero precisa ser preenchido a mao.
-    semNumero.push({
+    const pessoa = {
+      identificador: normalizarIdentificador(nome),
       numero: null,
       nome,
+      ordem: ++ordem,
       posto,
       categoria: grupo === "oficial" ? "Oficial" : "Subten/Sgt",
       bloco: grupo,
-    });
+    };
+    (pessoa.identificador ? pessoas : semNome).push(pessoa);
   }
 }
 
-// --- Bloco 2: SD EP ---
+// --- Bloco 2: SD EP (numero com o nome a direita) ---
 for (let l = PRIMEIRA; l <= ULTIMA; l++) {
   const numero = texto(aba.getCell(l, COL_EP_NUMERO));
   const nome = texto(aba.getCell(l, COL_EP_NOME));
   if (!/^\d+$/.test(numero)) continue;
-  pessoas.push({ numero, nome: nome || null, posto: "SD", categoria: "Cabo/Sd", bloco: "sdEp" });
+  pessoas.push({
+    identificador: numero,
+    numero,
+    nome: nome || null,
+    ordem: ++ordem,
+    posto: "SD",
+    categoria: "Cabo/Sd",
+    bloco: "sdEp",
+  });
 }
 
-// --- Blocos 3 a 5: SD EV ---
+// --- Blocos 3 a 5: SD EV (so o numero) ---
 for (const col of COLS_EV) {
   for (let l = PRIMEIRA; l <= ULTIMA; l++) {
     const numero = texto(aba.getCell(l, col));
     if (!/^\d+$/.test(numero)) continue;
-    pessoas.push({ numero, nome: null, posto: "SD", categoria: "Cabo/Sd", bloco: "sdEv" });
+    pessoas.push({
+      identificador: numero,
+      numero,
+      nome: null,
+      ordem: ++ordem,
+      posto: "SD",
+      categoria: "Cabo/Sd",
+      bloco: "sdEv",
+    });
   }
 }
 
 // --- Monta o SQL ---
 const aspas = (v) => (v === null || v === undefined || v === "" ? "null" : `'${String(v).replace(/'/g, "''")}'`);
 const linhaSql = (p) =>
-  `  (${aspas(p.numero)}, ${aspas(p.nome)}, ${aspas(p.posto)}, ${aspas(p.categoria)}, ${aspas(p.bloco)})`;
+  `  (${aspas(p.identificador)}, ${aspas(p.numero)}, ${aspas(p.nome)}, ` +
+  `${aspas(p.posto)}, ${aspas(p.categoria)}, ${aspas(p.bloco)}, ${p.ordem})`;
 
-const vistos = new Set();
-const unicas = pessoas.filter((p) => {
-  if (vistos.has(p.numero)) return false;
-  vistos.add(p.numero);
-  return true;
-});
+// Dois militares com o mesmo identificador se atropelariam no login, entao
+// o repetido fica de fora e e avisado no fim.
+const vistos = new Map();
+const repetidos = [];
+const unicas = [];
+for (const p of pessoas) {
+  const antes = vistos.get(p.identificador);
+  if (antes) {
+    repetidos.push([antes, p]);
+    continue;
+  }
+  vistos.set(p.identificador, p);
+  unicas.push(p);
+}
 
 let sql = `-- Relacao de quem pode se cadastrar no site.
 -- Gerado por "npm run autorizados" a partir de ${caminho.replace(/\\/g, "/")}.
 -- Confira antes de rodar: o modelo e uma foto de um dia, entao pode haver
 -- quem ja saiu ou quem entrou depois.
+--
+-- O "identificador" e o que a pessoa digita para entrar: o numero de guerra
+-- para cabos e soldados, o nome de guerra de sargento para cima.
 
-insert into autorizados (numero_guerra, nome, posto_grad, categoria, bloco) values
+insert into autorizados (identificador, numero_guerra, nome, posto_grad, categoria, bloco, ordem) values
 ${unicas.map(linhaSql).join(",\n")}
-on conflict (numero_guerra) do update set
-  nome       = excluded.nome,
-  posto_grad = excluded.posto_grad,
-  categoria  = excluded.categoria,
-  bloco      = excluded.bloco;
+on conflict (identificador) do update set
+  numero_guerra = excluded.numero_guerra,
+  nome          = excluded.nome,
+  posto_grad    = excluded.posto_grad,
+  categoria     = excluded.categoria,
+  bloco         = excluded.bloco,
+  ordem         = excluded.ordem;
 `;
 
-if (semNumero.length) {
+if (repetidos.length) {
   sql += `
 -- ---------------------------------------------------------------------
--- FALTA O NUMERO DE GUERRA
+-- IDENTIFICADORES REPETIDOS - resolva antes de liberar o site
 --
--- Na planilha do Rancho, oficiais e graduados aparecem so pelo posto e
--- nome — o numero nao esta la. Preencha os numeros abaixo (no lugar de
--- 'NUMERO'), apague esta linha de comentario e rode este bloco tambem.
--- Sem isso, essas pessoas nao conseguem criar acesso.
+-- As pessoas abaixo dariam no mesmo identificador, e so a primeira ficou
+-- na relacao. Diferencie (por exemplo "BORGES" e "BORGES 2") e acrescente
+-- a que faltou com um insert proprio.
 -- ---------------------------------------------------------------------
--- insert into autorizados (numero_guerra, nome, posto_grad, categoria, bloco) values
-${semNumero
-  .map((p) => `--   ('NUMERO', ${aspas(p.nome)}, ${aspas(p.posto)}, ${aspas(p.categoria)}, ${aspas(p.bloco)})`)
-  .join(",\n")}
--- on conflict (numero_guerra) do nothing;
+${repetidos
+  .map(([a, b]) => `--   ${a.identificador}: ${a.nome || a.numero} / ${b.nome || b.numero}`)
+  .join("\n")}
+`;
+}
+
+if (semNome.length) {
+  sql += `
+-- ---------------------------------------------------------------------
+-- SEM NOME LEGIVEL - ${semNome.length} linha(s) do bloco 1 nao deram nome
+-- aproveitavel e ficaram de fora. Acrescente a mao se fizer falta.
+-- ---------------------------------------------------------------------
 `;
 }
 
 await writeFile(SAIDA, sql, "utf8");
 
+const porBloco = unicas.reduce((acc, p) => {
+  acc[p.bloco] = (acc[p.bloco] || 0) + 1;
+  return acc;
+}, {});
+
 console.log(`gerado: ${SAIDA}`);
-console.log(`  com numero de guerra: ${unicas.length}`);
-console.log(`  falta o numero:       ${semNumero.length} (oficiais e graduados)`);
+console.log(`  total: ${unicas.length}`);
+Object.entries(porBloco).forEach(([b, n]) => console.log(`    ${b.padEnd(10)} ${n}`));
+if (repetidos.length) console.log(`  identificadores repetidos: ${repetidos.length} (veja o fim do arquivo)`);
+if (semNome.length) console.log(`  sem nome legivel: ${semNome.length}`);

@@ -2,7 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { supabase, emailInterno, mensagemErroAuth } from "@/lib/supabase";
+import {
+  supabase,
+  emailInterno,
+  mensagemErroAuth,
+  normalizarIdentificador,
+} from "@/lib/supabase";
 import Emblema from "@/components/Emblema";
 import { Campo, Botao, Erro } from "@/components/ui";
 
@@ -13,7 +18,7 @@ export default function Login() {
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState("");
 
-  const [numeroGuerra, setNumeroGuerra] = useState("");
+  const [identificador, setIdentificador] = useState("");
   const [senha, setSenha] = useState("");
   const [confirmaSenha, setConfirmaSenha] = useState("");
 
@@ -37,34 +42,34 @@ export default function Login() {
   async function entrar(e) {
     e.preventDefault();
     setErro("");
-    if (!numeroGuerra.trim() || !senha) {
-      setErro("Preencha o número de guerra e a senha.");
+    if (!identificador.trim() || !senha) {
+      setErro("Preencha a identificação e a senha.");
       return;
     }
     setCarregando(true);
     const { error } = await supabase.auth.signInWithPassword({
-      email: emailInterno(numeroGuerra),
+      email: emailInterno(identificador),
       password: senha,
     });
     setCarregando(false);
     if (error) {
-      setErro("Número de guerra ou senha incorretos. Se é seu primeiro acesso, toque em Criar acesso.");
+      setErro("Identificação ou senha incorretos. Se é seu primeiro acesso, toque em Criar acesso.");
       return;
     }
     router.replace("/semana");
   }
 
-  // Passo 1 do cadastro: o número está na relação da seção?
+  // Passo 1 do cadastro: essa pessoa está na relação da seção?
   async function conferir(e) {
     e.preventDefault();
     setErro("");
-    if (!numeroGuerra.trim()) {
-      setErro("Informe o número de guerra.");
+    if (!identificador.trim()) {
+      setErro("Informe seu número ou nome de guerra.");
       return;
     }
     setCarregando(true);
     const { data, error } = await supabase.rpc("dados_autorizado", {
-      numero: numeroGuerra.trim(),
+      ident: normalizarIdentificador(identificador),
     });
     setCarregando(false);
 
@@ -75,7 +80,7 @@ export default function Login() {
     }
     if (!data || data.length === 0) {
       setErro(
-        "Esse número de guerra não está na relação da seção. Confira se digitou certo — se estiver certo, procure o responsável para ser incluído."
+        "Não encontrei essa identificação na relação da seção. Cabos e soldados entram pelo número de guerra; sargentos e acima, pelo nome de guerra. Se estiver certo, procure o responsável para ser incluído."
       );
       return;
     }
@@ -99,7 +104,7 @@ export default function Login() {
     setCarregando(true);
 
     const { data, error } = await supabase.auth.signUp({
-      email: emailInterno(numeroGuerra),
+      email: emailInterno(identificador),
       password: senha,
     });
 
@@ -117,11 +122,13 @@ export default function Login() {
 
     const { error: erroPerfil } = await supabase.from("militares").insert({
       id: data.user.id,
-      numero_guerra: numeroGuerra.trim(),
+      identificador: normalizarIdentificador(identificador),
+      numero_guerra: autorizado.numero_guerra,
       nome: autorizado.nome,
       posto_grad: autorizado.posto_grad,
       categoria: autorizado.categoria,
       bloco: autorizado.bloco,
+      ordem: autorizado.ordem,
       tipo_sd: autorizado.bloco === "sdEv" ? "EV" : autorizado.categoria === "Cabo/Sd" ? "EP" : null,
     });
 
@@ -155,11 +162,10 @@ export default function Login() {
         {etapa === "login" && (
           <form onSubmit={entrar} className="space-y-4">
             <Campo
-              label="Número de guerra"
-              value={numeroGuerra}
-              onChange={setNumeroGuerra}
-              inputMode="numeric"
-              placeholder="Ex.: 231"
+              label="Número ou nome de guerra"
+              value={identificador}
+              onChange={setIdentificador}
+              placeholder="231 ou BORGES"
               autoFocus
             />
             <Campo label="Senha" value={senha} onChange={setSenha} type="password" />
@@ -174,13 +180,12 @@ export default function Login() {
         {etapa === "conferir" && (
           <form onSubmit={conferir} className="space-y-4">
             <Campo
-              label="Número de guerra"
-              value={numeroGuerra}
-              onChange={setNumeroGuerra}
-              inputMode="numeric"
-              placeholder="Ex.: 231"
+              label="Número ou nome de guerra"
+              value={identificador}
+              onChange={setIdentificador}
+              placeholder="231 ou BORGES"
               autoFocus
-              dica="Seus dados vêm da relação da seção — você só precisa criar uma senha."
+              dica="Cabos e soldados: número de guerra. Sargentos e acima: nome de guerra. O resto dos dados vem da relação da seção."
             />
             <Erro texto={erro} />
             <Botao carregando={carregando}>Continuar</Botao>
@@ -195,10 +200,11 @@ export default function Login() {
             <div className="rounded-xl border border-ouro-500/30 bg-ouro-500/[0.08] px-4 py-3">
               <p className="font-titulo text-lg font-semibold uppercase leading-tight tracking-wide text-ouro-200">
                 {[autorizado?.posto_grad, autorizado?.nome].filter(Boolean).join(" ") ||
-                  `Nº ${numeroGuerra.trim()}`}
+                  identificador.trim()}
               </p>
               <p className="mt-0.5 text-xs text-noite-300">
-                Nº {numeroGuerra.trim()} · {autorizado?.categoria}
+                {autorizado?.numero_guerra ? `Nº ${autorizado.numero_guerra} · ` : ""}
+                {autorizado?.categoria}
                 {autorizado?.bloco === "sdEv" ? " · Efetivo Variável" : ""}
               </p>
             </div>
