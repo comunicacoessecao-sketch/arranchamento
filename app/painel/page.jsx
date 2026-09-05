@@ -5,11 +5,14 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import {
   DIAS,
-  segundaDaSemana,
+  PRIMEIRO_DIA,
+  ULTIMO_DIA,
+  inicioPeriodo,
   paraISO,
   datasDaSemana,
   nomeExibicao,
 } from "@/lib/semana";
+import { dataDeHoje } from "@/lib/hoje";
 import { calcularTotais, baixarExcel } from "@/lib/exportar";
 import { Cabecalho, LinkTopo, Carregando, Erro } from "@/components/ui";
 
@@ -19,18 +22,28 @@ export default function Painel() {
   const [carregando, setCarregando] = useState(true);
   const [militares, setMilitares] = useState([]);
   const [marcacoes, setMarcacoes] = useState({});
-  const [diaAtivo, setDiaAtivo] = useState("seg");
-  const [deslocamento, setDeslocamento] = useState(1); // 1 = próxima semana
+  const [diaAtivo, setDiaAtivo] = useState(PRIMEIRO_DIA);
+  // 0 = o periodo que os militares estao preenchendo agora.
+  const [deslocamento, setDeslocamento] = useState(0);
+  const [hoje, setHoje] = useState(null);
   const [gerando, setGerando] = useState(false);
   const [erroExport, setErroExport] = useState("");
 
-  const base = segundaDaSemana();
-  const segunda = new Date(base);
-  segunda.setDate(segunda.getDate() + deslocamento * 7);
-  const semanaISO = paraISO(segunda);
-  const datas = datasDaSemana(segunda);
+  // A data vem do servidor, nao do relogio do aparelho.
+  useEffect(() => {
+    dataDeHoje().then(({ data }) => setHoje(data));
+  }, []);
+
+  let inicio = null;
+  if (hoje) {
+    inicio = inicioPeriodo(hoje);
+    inicio.setDate(inicio.getDate() + deslocamento * 7);
+  }
+  const semanaISO = inicio ? paraISO(inicio) : null;
+  const datas = inicio ? datasDaSemana(inicio) : null;
 
   const carregar = useCallback(async () => {
+    if (!semanaISO) return;
     setCarregando(true);
     const { data: sessao } = await supabase.auth.getSession();
     if (!sessao.session) {
@@ -75,7 +88,7 @@ export default function Painel() {
     setErroExport("");
     setGerando(true);
     try {
-      await baixarExcel(militares, marcacoes, segunda);
+      await baixarExcel(militares, marcacoes, inicio);
     } catch (e) {
       console.error(e);
       setErroExport("Não foi possível gerar a planilha. Tente de novo ou avise o responsável.");
@@ -84,7 +97,7 @@ export default function Painel() {
     }
   }
 
-  if (carregando || !autorizado) return <Carregando />;
+  if (carregando || !autorizado || !datas) return <Carregando />;
 
   const { linhas, soma } = calcularTotais(militares, marcacoes, diaAtivo);
   const semResposta = militares.filter((m) => !marcacoes[m.id]);
@@ -97,7 +110,7 @@ export default function Painel() {
     <main className="mx-auto w-full max-w-2xl px-4 pb-16 pt-7">
       <Cabecalho
         titulo="Painel da seção"
-        subtitulo={`Semana de ${datas.seg.curta} a ${datas.dom.curta}`}
+        subtitulo={`Período de ${datas[PRIMEIRO_DIA].curta} a ${datas[ULTIMO_DIA].curta}`}
         acoes={<LinkTopo href="/semana">Minha semana</LinkTopo>}
       />
 
@@ -107,7 +120,11 @@ export default function Painel() {
           ← Anterior
         </button>
         <p className="font-titulo text-sm uppercase tracking-[0.2em] text-noite-300">
-          {deslocamento === 1 ? "Próxima semana" : deslocamento === 0 ? "Semana atual" : "Outra semana"}
+          {deslocamento === 0
+            ? "Período em preenchimento"
+            : deslocamento < 0
+              ? "Período anterior"
+              : "Período futuro"}
         </p>
         <button onClick={() => setDeslocamento((d) => d + 1)} className="botao-fantasma">
           Próxima →

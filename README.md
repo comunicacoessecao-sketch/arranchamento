@@ -113,6 +113,35 @@ fechar a semana.
 
 ---
 
+## O período de arranchamento
+
+O período vai de **terça a segunda** — o mesmo que o papel entregue na segunda
+de manhã cobre. O site troca de período sozinho, na madrugada de segunda para
+terça:
+
+| Se hoje é | O militar preenche |
+|---|---|
+| domingo 06/09 | terça 08/09 a segunda 14/09 |
+| **segunda 07/09** | terça 08/09 a segunda 14/09 |
+| terça 08/09 | terça 15/09 a segunda 21/09 |
+| … até segunda 14/09 | terça 15/09 a segunda 21/09 |
+
+Ou seja: o militar tem a semana inteira para preencher o período seguinte, e a
+segunda-feira é o último dia — igual à rotina do papel, só que com uma semana
+de antecedência disponível.
+
+**A data vem do servidor**, não do relógio do aparelho. Um celular com a data
+errada mandaria o arranchamento para o período errado; por isso o site pergunta
+a data ao servidor (em horário de Brasília) antes de decidir o que mostrar. Se
+o servidor não responder, ele usa o relógio do aparelho e avisa na tela.
+
+O administrador vê o mesmo período no Painel, com **← Anterior** e
+**Próxima →** para consultar ou baixar a planilha de qualquer período, inclusive
+os já passados.
+
+Para mudar o dia da virada, mexa em `inicioPeriodo()` e na ordem de `DIAS`, em
+`lib/semana.js`.
+
 ## Identidade visual
 
 O site usa azul-noite com detalhes em dourado e os motivos da Arma de

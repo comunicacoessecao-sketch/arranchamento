@@ -6,12 +6,15 @@ import { supabase } from "@/lib/supabase";
 import {
   DIAS,
   REFEICOES,
-  proximaSegunda,
+  PRIMEIRO_DIA,
+  ULTIMO_DIA,
+  inicioPeriodo,
   paraISO,
   datasDaSemana,
   semanaVazia,
   nomeExibicao,
 } from "@/lib/semana";
+import { dataDeHoje } from "@/lib/hoje";
 import { Cabecalho, LinkTopo, Erro, Aviso, Carregando } from "@/components/ui";
 
 export default function Semana() {
@@ -23,11 +26,23 @@ export default function Semana() {
   const [aviso, setAviso] = useState("");
   const [erro, setErro] = useState("");
 
-  const segunda = proximaSegunda();
-  const semanaISO = paraISO(segunda);
-  const datas = datasDaSemana(segunda);
+  // A data vem do servidor, nao do relogio do aparelho.
+  const [hoje, setHoje] = useState(null);
+  const [dataConfirmada, setDataConfirmada] = useState(true);
+
+  useEffect(() => {
+    dataDeHoje().then(({ data, doServidor }) => {
+      setHoje(data);
+      setDataConfirmada(doServidor);
+    });
+  }, []);
+
+  const inicio = hoje ? inicioPeriodo(hoje) : null;
+  const semanaISO = inicio ? paraISO(inicio) : null;
+  const datas = inicio ? datasDaSemana(inicio) : null;
 
   const carregar = useCallback(async () => {
+    if (!semanaISO) return;
     const { data: sessao } = await supabase.auth.getSession();
     if (!sessao.session) {
       router.replace("/");
@@ -109,7 +124,7 @@ export default function Semana() {
     router.replace("/");
   }
 
-  if (carregando) return <Carregando />;
+  if (carregando || !datas) return <Carregando />;
 
   const totalMarcado = DIAS.reduce(
     (acc, d) => acc + REFEICOES.filter((r) => marcacoes[d.key][r.key]).length,
@@ -119,7 +134,7 @@ export default function Semana() {
   return (
     <main className="mx-auto w-full max-w-md px-4 pb-40 pt-7">
       <Cabecalho
-        titulo="Minha semana"
+        titulo="Meu arranchamento"
         subtitulo={nomeExibicao(militar)}
         acoes={
           <>
@@ -131,9 +146,9 @@ export default function Semana() {
 
       <div className="cartao mb-4 flex items-center justify-between px-4 py-3">
         <div>
-          <p className="titulo-secao">Semana a arranchar</p>
+          <p className="titulo-secao">Período a arranchar</p>
           <p className="mt-1 font-titulo text-xl font-semibold tracking-wide text-white">
-            {datas.seg.curta} — {datas.dom.curta}
+            {datas[PRIMEIRO_DIA].curta} — {datas[ULTIMO_DIA].curta}
           </p>
         </div>
         <div className="text-right">
@@ -215,6 +230,13 @@ export default function Semana() {
       </div>
 
       <div className="mt-4 space-y-2">
+        {!dataConfirmada && (
+          <p className="rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-xs text-noite-300">
+            Não consegui confirmar a data no servidor — o período acima foi
+            calculado pelo relógio deste aparelho. Se ele estiver errado, o
+            arranchamento vai para a semana errada.
+          </p>
+        )}
         <Erro texto={erro} />
         <Aviso texto={aviso} />
       </div>

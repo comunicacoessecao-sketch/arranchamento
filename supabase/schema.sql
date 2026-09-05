@@ -23,7 +23,9 @@ create table if not exists militares (
 -- ---------------------------------------------------------------------
 -- Tabela de arranchamentos
 -- Uma linha por militar / semana / dia.
--- "semana" guarda sempre a data da SEGUNDA-FEIRA daquela semana.
+-- "semana" guarda a data da TERCA-FEIRA que abre o periodo. O periodo de
+-- arranchamento da secao vai de terca a segunda, igual ao papel entregue
+-- na segunda de manha.
 -- ---------------------------------------------------------------------
 create table if not exists arranchamentos (
   id          uuid primary key default gen_random_uuid(),

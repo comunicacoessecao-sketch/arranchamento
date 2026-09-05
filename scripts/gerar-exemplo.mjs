@@ -106,8 +106,8 @@ militares.forEach((m) => {
   });
 });
 
-const segunda = new Date(2026, 8, 7); // 07/09/2026, uma segunda-feira
-const { pasta } = montarPasta(ExcelJS, militares, marcacoes, segunda);
+const inicio = new Date(2026, 8, 8); // terça 08/09/2026, abre o período
+const { pasta } = montarPasta(ExcelJS, militares, marcacoes, inicio);
 
 const destino = process.argv[2];
 await pasta.xlsx.writeFile(destino);
