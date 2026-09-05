@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { supabase, emailInterno } from "@/lib/supabase";
+import { supabase, emailInterno, mensagemErroAuth } from "@/lib/supabase";
 import { CATEGORIAS } from "@/lib/semana";
 import Emblema from "@/components/Emblema";
 import { Campo, Botao, Erro } from "@/components/ui";
@@ -72,11 +72,14 @@ export default function Login() {
 
     if (error) {
       setCarregando(false);
-      setErro(
-        error.message.includes("already")
-          ? "Esse número de guerra já tem acesso criado. Volte e faça login."
-          : "Não foi possível criar o acesso. Tente novamente."
-      );
+      console.error("signUp:", error);
+      setErro(mensagemErroAuth(error));
+      return;
+    }
+
+    if (!data?.user) {
+      setCarregando(false);
+      setErro("O Supabase não devolveu o usuário criado. Confira se a opção Confirm email está desligada em Authentication → Providers → Email.");
       return;
     }
 
@@ -91,7 +94,10 @@ export default function Login() {
 
     setCarregando(false);
     if (erroPerfil) {
-      setErro("Acesso criado, mas o cadastro falhou. Chame o responsável pela seção.");
+      console.error("cadastro militar:", erroPerfil);
+      setErro(
+        `Acesso criado, mas o cadastro na tabela falhou. (${erroPerfil.message || "erro desconhecido"})`
+      );
       return;
     }
     router.replace("/semana");
