@@ -3,30 +3,36 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase, emailInterno, mensagemErroAuth } from "@/lib/supabase";
-import { CATEGORIAS } from "@/lib/semana";
 import Emblema from "@/components/Emblema";
 import { Campo, Botao, Erro } from "@/components/ui";
 
 export default function Login() {
   const router = useRouter();
+  // "login" | "conferir" (informa o número) | "criar" (define a senha)
   const [etapa, setEtapa] = useState("login");
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState("");
 
   const [numeroGuerra, setNumeroGuerra] = useState("");
   const [senha, setSenha] = useState("");
-
-  const [nome, setNome] = useState("");
-  const [postoGrad, setPostoGrad] = useState("");
-  const [categoria, setCategoria] = useState("Cabo/Sd");
-  const [tipoSd, setTipoSd] = useState("EP");
   const [confirmaSenha, setConfirmaSenha] = useState("");
+
+  // Dados vindos da relação de autorizados.
+  const [autorizado, setAutorizado] = useState(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) router.replace("/semana");
     });
   }, [router]);
+
+  function irPara(proxima) {
+    setErro("");
+    setSenha("");
+    setConfirmaSenha("");
+    if (proxima !== "criar") setAutorizado(null);
+    setEtapa(proxima);
+  }
 
   async function entrar(e) {
     e.preventDefault();
@@ -48,13 +54,40 @@ export default function Login() {
     router.replace("/semana");
   }
 
-  async function cadastrar(e) {
+  // Passo 1 do cadastro: o número está na relação da seção?
+  async function conferir(e) {
     e.preventDefault();
     setErro("");
     if (!numeroGuerra.trim()) {
       setErro("Informe o número de guerra.");
       return;
     }
+    setCarregando(true);
+    const { data, error } = await supabase.rpc("dados_autorizado", {
+      numero: numeroGuerra.trim(),
+    });
+    setCarregando(false);
+
+    if (error) {
+      console.error("dados_autorizado:", error);
+      setErro(`Não foi possível conferir a relação. (${error.message || "erro desconhecido"})`);
+      return;
+    }
+    if (!data || data.length === 0) {
+      setErro(
+        "Esse número de guerra não está na relação da seção. Confira se digitou certo — se estiver certo, procure o responsável para ser incluído."
+      );
+      return;
+    }
+
+    setAutorizado(data[0]);
+    setEtapa("criar");
+  }
+
+  // Passo 2 do cadastro: cria o acesso com os dados que vieram da relação.
+  async function criarAcesso(e) {
+    e.preventDefault();
+    setErro("");
     if (senha.length < 6) {
       setErro("A senha precisa ter pelo menos 6 caracteres.");
       return;
@@ -76,7 +109,6 @@ export default function Login() {
       setErro(mensagemErroAuth(error));
       return;
     }
-
     if (!data?.user) {
       setCarregando(false);
       setErro("O Supabase não devolveu o usuário criado. Confira se a opção Confirm email está desligada em Authentication → Providers → Email.");
@@ -86,18 +118,17 @@ export default function Login() {
     const { error: erroPerfil } = await supabase.from("militares").insert({
       id: data.user.id,
       numero_guerra: numeroGuerra.trim(),
-      nome: nome.trim() || null,
-      posto_grad: postoGrad.trim() || null,
-      categoria,
-      tipo_sd: categoria === "Cabo/Sd" ? tipoSd : null,
+      nome: autorizado.nome,
+      posto_grad: autorizado.posto_grad,
+      categoria: autorizado.categoria,
+      bloco: autorizado.bloco,
+      tipo_sd: autorizado.bloco === "sdEv" ? "EV" : autorizado.categoria === "Cabo/Sd" ? "EP" : null,
     });
 
     setCarregando(false);
     if (erroPerfil) {
       console.error("cadastro militar:", erroPerfil);
-      setErro(
-        `Acesso criado, mas o cadastro na tabela falhou. (${erroPerfil.message || "erro desconhecido"})`
-      );
+      setErro(`Acesso criado, mas o cadastro na tabela falhou. (${erroPerfil.message || "erro desconhecido"})`);
       return;
     }
     router.replace("/semana");
@@ -118,10 +149,10 @@ export default function Login() {
 
       <div className="cartao animate-surgir p-6">
         <p className="titulo-secao mb-5">
-          {etapa === "login" ? "Acesso" : "Novo cadastro"}
+          {etapa === "login" ? "Acesso" : etapa === "conferir" ? "Criar acesso" : "Confirme seus dados"}
         </p>
 
-        {etapa === "login" ? (
+        {etapa === "login" && (
           <form onSubmit={entrar} className="space-y-4">
             <Campo
               label="Número de guerra"
@@ -134,17 +165,14 @@ export default function Login() {
             <Campo label="Senha" value={senha} onChange={setSenha} type="password" />
             <Erro texto={erro} />
             <Botao carregando={carregando}>Entrar</Botao>
-            <Alternar
-              onClick={() => {
-                setErro("");
-                setEtapa("cadastro");
-              }}
-            >
+            <Alternar onClick={() => irPara("conferir")}>
               Primeira vez? <span className="text-ouro-300">Criar acesso</span>
             </Alternar>
           </form>
-        ) : (
-          <form onSubmit={cadastrar} className="space-y-4">
+        )}
+
+        {etapa === "conferir" && (
+          <form onSubmit={conferir} className="space-y-4">
             <Campo
               label="Número de guerra"
               value={numeroGuerra}
@@ -152,74 +180,30 @@ export default function Login() {
               inputMode="numeric"
               placeholder="Ex.: 231"
               autoFocus
+              dica="Seus dados vêm da relação da seção — você só precisa criar uma senha."
             />
+            <Erro texto={erro} />
+            <Botao carregando={carregando}>Continuar</Botao>
+            <Alternar onClick={() => irPara("login")}>
+              Já tenho acesso — <span className="text-ouro-300">entrar</span>
+            </Alternar>
+          </form>
+        )}
 
-            <div>
-              <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-noite-300">
-                Categoria
-              </label>
-              <select
-                value={categoria}
-                onChange={(e) => setCategoria(e.target.value)}
-                className="campo"
-              >
-                {CATEGORIAS.map((c) => (
-                  <option key={c} value={c} className="bg-noite-900 text-noite-100">
-                    {c}
-                  </option>
-                ))}
-              </select>
+        {etapa === "criar" && (
+          <form onSubmit={criarAcesso} className="space-y-4">
+            <div className="rounded-xl border border-ouro-500/30 bg-ouro-500/[0.08] px-4 py-3">
+              <p className="font-titulo text-lg font-semibold uppercase leading-tight tracking-wide text-ouro-200">
+                {[autorizado?.posto_grad, autorizado?.nome].filter(Boolean).join(" ") ||
+                  `Nº ${numeroGuerra.trim()}`}
+              </p>
+              <p className="mt-0.5 text-xs text-noite-300">
+                Nº {numeroGuerra.trim()} · {autorizado?.categoria}
+                {autorizado?.bloco === "sdEv" ? " · Efetivo Variável" : ""}
+              </p>
             </div>
 
-            {categoria === "Cabo/Sd" && (
-              <div>
-                <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-noite-300">
-                  Tipo
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { v: "EP", t: "Efetivo Profissional" },
-                    { v: "EV", t: "Efetivo Variável" },
-                  ].map((o) => (
-                    <button
-                      key={o.v}
-                      type="button"
-                      onClick={() => setTipoSd(o.v)}
-                      className={
-                        "rounded-xl border px-2 py-2.5 text-sm transition " +
-                        (tipoSd === o.v
-                          ? "border-ouro-500/70 bg-ouro-500/15 font-medium text-ouro-200"
-                          : "border-white/10 bg-white/[0.03] text-noite-300 hover:border-white/20")
-                      }
-                    >
-                      <span className="block font-titulo text-base font-semibold uppercase tracking-wider">
-                        {o.v}
-                      </span>
-                      <span className="block text-[11px] leading-tight opacity-80">{o.t}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {!(categoria === "Cabo/Sd" && tipoSd === "EV") && (
-              <>
-                <Campo
-                  label="Posto / Graduação"
-                  value={postoGrad}
-                  onChange={setPostoGrad}
-                  placeholder="3º SGT, CB, SD…"
-                  dica={
-                    categoria === "Cabo/Sd"
-                      ? "Cabos: escreva CB. É por aqui que a planilha separa cabos de soldados."
-                      : undefined
-                  }
-                />
-                <Campo label="Nome de guerra" value={nome} onChange={setNome} />
-              </>
-            )}
-
-            <Campo label="Criar senha" value={senha} onChange={setSenha} type="password" />
+            <Campo label="Criar senha" value={senha} onChange={setSenha} type="password" autoFocus />
             <Campo
               label="Repetir senha"
               value={confirmaSenha}
@@ -229,13 +213,8 @@ export default function Login() {
 
             <Erro texto={erro} />
             <Botao carregando={carregando}>Criar acesso</Botao>
-            <Alternar
-              onClick={() => {
-                setErro("");
-                setEtapa("login");
-              }}
-            >
-              Já tenho acesso — <span className="text-ouro-300">entrar</span>
+            <Alternar onClick={() => irPara("conferir")}>
+              Não sou eu — <span className="text-ouro-300">voltar</span>
             </Alternar>
           </form>
         )}

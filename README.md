@@ -18,6 +18,8 @@ planilha do Rancho automaticamente.
 4. No menu lateral, abra **SQL Editor** → **New query**.
 5. Abra o arquivo `supabase/schema.sql` deste projeto, copie tudo, cole no
    editor e clique em **Run**. Isso cria as tabelas e as regras de segurança.
+   Depois repita com `supabase/02-cadastro-fechado.sql`, que fecha o cadastro
+   à relação da seção — os detalhes estão em "Quem pode se cadastrar".
 6. Ainda no Supabase, vá em **Authentication** → **Providers** → **Email** e
    **desligue** a opção *Confirm email*. Sem isso o militar precisaria confirmar
    um e-mail que não existe.
@@ -139,12 +141,56 @@ Os dados da OM (seção, companhia, cidade, quem assina) ficam em `lib/modelo.js
 **Campos que o site não tem** e continuam para preencher à mão: *Outra OM*,
 *QT Ativos*, *Complementos* e *C Esc*.
 
-**Cabo ou soldado?** O cadastro pergunta só a categoria (Cabo/Sd) e o tipo
-(EP ou EV). Para separar os **cabos** dos **SD EP** — que ficam em blocos
-diferentes da planilha — o sistema olha o posto/graduação: quem escreveu `CB`
-vai para o bloco dos cabos, o resto vai para SD EP. Se quiser tornar isso à
-prova de erro, o caminho é acrescentar no cadastro uma escolha explícita entre
-Cabo, Sd EP e Sd EV (exige alterar o `check` da coluna `tipo_sd` no banco).
+**Cabo ou soldado?** Quem é cabo e quem é SD EP fica em blocos diferentes da
+planilha. Essa classificação vem pronta da relação de autorizados (coluna
+`bloco`), gravada no militar no momento do cadastro — não é deduzida do que
+ele digita.
+
+## Quem pode se cadastrar
+
+Só quem estiver na tabela `autorizados`. O militar informa o número de guerra,
+o site confere na relação e, se achar, mostra o nome e o posto e pede apenas
+uma senha — ele não digita mais os próprios dados.
+
+**Para ligar isso** (uma vez só, num projeto que já rodou o `schema.sql`):
+
+1. Supabase → **SQL Editor** → cole e rode o `supabase/02-cadastro-fechado.sql`.
+2. No seu computador, gere a relação a partir do modelo do Rancho:
+
+```bash
+npm run autorizados
+```
+
+   Isso cria `supabase/autorizados.sql`. O arquivo **não vai para o GitHub** —
+   tem os nomes reais da companhia, e não há motivo para eles ficarem gravados
+   no histórico do repositório. Ele fica só na sua máquina; se precisar de
+   novo, é só rodar o comando outra vez.
+
+3. Abra o arquivo, confira a relação e cole no SQL Editor.
+
+**Oficiais e graduados precisam de atenção.** A planilha do Rancho lista essa
+turma só por posto e nome de guerra — o número não está lá. Eles saem num
+bloco comentado no fim do arquivo, com `'NUMERO'` no lugar do número. Preencha,
+descomente e rode. Enquanto isso não for feito, eles não conseguem criar acesso.
+
+**Para incluir alguém depois** (militar novo na companhia), no SQL Editor:
+
+```sql
+insert into autorizados (numero_guerra, nome, posto_grad, categoria, bloco)
+values ('231', 'BORGES', '3º SGT', 'Subten/Sgt', 'subtenSgt');
+```
+
+O `bloco` diz em que parte da planilha a pessoa entra: `oficial`, `subtenSgt`,
+`cabo`, `sdEp` ou `sdEv`.
+
+**Para tirar alguém** que saiu da companhia:
+
+```sql
+delete from autorizados where numero_guerra = '231';
+```
+
+Isso impede novos cadastros com esse número, mas não apaga quem já tem acesso —
+para isso, Supabase → **Authentication** → **Users** → **Delete user**.
 
 ## Observações de segurança
 
@@ -152,6 +198,9 @@ Cabo, Sd EP e Sd EV (exige alterar o `check` da coluna `tipo_sd` no banco).
   ficam criptografadas — nem o administrador vê a senha de ninguém.
 - As regras (RLS) no banco garantem que cada militar só enxerga o próprio
   arranchamento; apenas quem tem `admin = true` lê os dados de toda a seção.
-- O cadastro é aberto: qualquer pessoa com o link consegue se cadastrar. Se
-  isso for um problema, o próximo passo é pré-cadastrar os números de guerra
-  autorizados e recusar quem não estiver na lista.
+- O cadastro é fechado: só cria acesso quem está na relação de autorizados.
+  A regra vale no banco, não só na tela — nem por fora do site dá para burlar.
+- A relação não é legível: ninguém consegue baixar a lista de nomes da
+  companhia. O site pergunta por um número de guerra de cada vez, através de
+  uma função. Quem chutar um número válido vê o nome correspondente; é o preço
+  de o militar não precisar digitar os próprios dados.

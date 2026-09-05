@@ -52,7 +52,7 @@ const novo = (extra) => {
 };
 
 OFICIAIS.forEach(([pg, nome, num]) =>
-  novo({ numero_guerra: num, posto_grad: pg, nome, categoria: "Oficial", tipo_sd: null })
+  novo({ numero_guerra: num, posto_grad: pg, nome, categoria: "Oficial", tipo_sd: null, bloco: "oficial" })
 );
 GRADUADOS.forEach(([pg, nome], i) =>
   novo({
@@ -61,13 +61,14 @@ GRADUADOS.forEach(([pg, nome], i) =>
     nome,
     categoria: "Subten/Sgt",
     tipo_sd: null,
+    bloco: "subtenSgt",
   })
 );
 CABOS.forEach(([num, nome]) =>
-  novo({ numero_guerra: num, posto_grad: "CB", nome, categoria: "Cabo/Sd", tipo_sd: "EP" })
+  novo({ numero_guerra: num, posto_grad: "CB", nome, categoria: "Cabo/Sd", tipo_sd: "EP", bloco: "cabo" })
 );
 SD_EP.forEach(([num, nome]) =>
-  novo({ numero_guerra: num, posto_grad: "SD", nome, categoria: "Cabo/Sd", tipo_sd: "EP" })
+  novo({ numero_guerra: num, posto_grad: "SD", nome, categoria: "Cabo/Sd", tipo_sd: "EP", bloco: "sdEp" })
 );
 // 120 soldados do efetivo variavel, so numero de guerra.
 for (let i = 0; i < 120; i++) {
@@ -77,6 +78,7 @@ for (let i = 0; i < 120; i++) {
     nome: null,
     categoria: "Cabo/Sd",
     tipo_sd: "EV",
+    bloco: "sdEv",
   });
 }
 
