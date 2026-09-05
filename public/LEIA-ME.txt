@@ -1,0 +1,14 @@
+COMO COLOCAR O SÍMBOLO OFICIAL DA ARMA DE COMUNICAÇÕES
+=======================================================
+
+Salve a imagem do distintivo nesta pasta com exatamente este nome:
+
+    emblema.png
+
+Recomendado: PNG quadrado, fundo transparente, pelo menos 256x256 pixels.
+
+Pronto. O site passa a usar essa imagem sozinho, na tela de login e no
+cabeçalho de todas as páginas — não precisa mexer em nenhum código.
+
+Enquanto o arquivo não existir, aparece um emblema desenhado
+(raios cruzados e ondas de rádio), que é apenas uma marca do site.

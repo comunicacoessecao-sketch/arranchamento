@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Prévia — Arranchamento</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: { extend: {
+    colors: {
+      noite: {950:"#060a13",900:"#0a1020",850:"#0e162b",800:"#131d38",700:"#1b2a4c",600:"#25375f",500:"#31497a",400:"#4a6396",300:"#8095bd",200:"#b6c5e0",100:"#dde5f4"},
+      ouro: {600:"#a8851b",500:"#c9a227",400:"#dcb845",300:"#e9cf7d",200:"#f3e3af"}
+    },
+    fontFamily: { sans:["Inter","system-ui","sans-serif"], titulo:["Barlow Condensed","Impact","sans-serif"] },
+    boxShadow: {
+      cartao:"0 1px 0 0 rgba(255,255,255,0.05) inset, 0 18px 40px -24px rgba(0,0,0,0.9)",
+      ouro:"0 8px 24px -10px rgba(201,162,39,0.55)"
+    }
+  }}
+}
+</script>
+<style>
+  body{background-color:#0a1020;color:#dde5f4;font-family:Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+    background:radial-gradient(120% 70% at 50% -20%, rgba(201,162,39,.16), transparent 60%),
+               radial-gradient(90% 60% at 100% 0%, rgba(49,73,122,.35), transparent 55%),
+               linear-gradient(180deg,#0e162b 0%,#0a1020 45%,#060a13 100%)}
+  body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.35;
+    background-image:repeating-linear-gradient(115deg, rgba(255,255,255,.025) 0px, rgba(255,255,255,.025) 1px, transparent 1px, transparent 9px)}
+  .cartao{border-radius:1rem;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.04);
+          box-shadow:0 1px 0 0 rgba(255,255,255,.05) inset, 0 18px 40px -24px rgba(0,0,0,.9);backdrop-filter:blur(4px)}
+  .titulo-secao{font-family:"Barlow Condensed",sans-serif;font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.22em;color:#dcb845}
+  .campo{width:100%;border-radius:.75rem;border:1px solid rgba(255,255,255,.10);background:rgba(6,10,19,.6);
+         padding:.75rem .875rem;font-size:1rem;color:#dde5f4;outline:none}
+  .campo::placeholder{color:#4a6396}
+  .botao-ouro{width:100%;border-radius:.75rem;background:linear-gradient(180deg,#dcb845,#c9a227);padding:.75rem 0;
+    font-family:"Barlow Condensed",sans-serif;font-size:1rem;font-weight:600;text-transform:uppercase;letter-spacing:.14em;
+    color:#060a13;box-shadow:0 8px 24px -10px rgba(201,162,39,.55);border:0;cursor:pointer}
+  .botao-fantasma{border-radius:.75rem;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.03);
+    padding:.5rem .875rem;font-size:.875rem;color:#b6c5e0;cursor:pointer}
+  .tela{scroll-margin-top:1rem}
+</style>
+</head>
+<body class="font-sans">
+
+<svg aria-hidden="true" class="pointer-events-none fixed left-1/2 top-0 -z-10 h-[420px] w-[820px] -translate-x-1/2 opacity-[0.13]" viewBox="0 0 820 420" fill="none">
+  <circle cx="410" cy="30" r="70" stroke="#dcb845" stroke-width="1" stroke-dasharray="3 7"/>
+  <circle cx="410" cy="30" r="140" stroke="#dcb845" stroke-width="1" stroke-dasharray="3 7"/>
+  <circle cx="410" cy="30" r="210" stroke="#dcb845" stroke-width="1" stroke-dasharray="3 7"/>
+  <circle cx="410" cy="30" r="280" stroke="#dcb845" stroke-width="1" stroke-dasharray="3 7"/>
+  <circle cx="410" cy="30" r="350" stroke="#dcb845" stroke-width="1" stroke-dasharray="3 7"/>
+</svg>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs><linearGradient id="eo" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#f3e3af"/><stop offset="45%" stop-color="#dcb845"/><stop offset="100%" stop-color="#a8851b"/>
+  </linearGradient></defs>
+</svg>
+
+<template id="emb">
+  <svg viewBox="0 0 100 100">
+    <circle cx="50" cy="50" r="46" fill="rgba(6,10,19,0.55)"/>
+    <circle cx="50" cy="50" r="46" fill="none" stroke="url(#eo)" stroke-width="2.5"/>
+    <circle cx="50" cy="50" r="40" fill="none" stroke="url(#eo)" stroke-width="0.9" opacity="0.55"/>
+    <g fill="none" stroke="url(#eo)" stroke-linecap="round" opacity="0.85">
+      <path d="M30 34a28 28 0 0 1 40 0" stroke-width="2"/>
+      <path d="M36 26a38 38 0 0 1 28 0" stroke-width="1.6" opacity="0.7"/>
+    </g>
+    <g fill="url(#eo)">
+      <path d="M44 40 L30 62 L40 62 L34 80 L52 56 L42 56 Z"/>
+      <path d="M56 40 L70 62 L60 62 L66 80 L48 56 L58 56 Z" opacity="0.92"/>
+    </g>
+    <path d="M32 84h36" stroke="url(#eo)" stroke-width="2.5" stroke-linecap="round"/>
+  </svg>
+</template>
+
+<div class="mx-auto max-w-[1400px] px-6 py-8">
+  <p class="titulo-secao mb-6">Prévia do novo visual — 3 telas</p>
+
+  <div class="flex flex-wrap items-start gap-8">
+
+    <!-- ===== TELA 1: LOGIN ===== -->
+    <div>
+      <p class="mb-2 text-xs uppercase tracking-widest text-noite-300">1 · Entrar</p>
+      <div class="cartao w-[400px] overflow-hidden" style="height:760px">
+        <main class="flex h-full w-full max-w-sm flex-col justify-center px-5 py-10">
+          <div class="mb-8 flex flex-col items-center text-center">
+            <span class="emb" style="width:92px;height:92px"></span>
+            <h1 class="mt-5 font-titulo text-4xl font-bold uppercase tracking-[0.12em] text-white">Arranchamento</h1>
+            <p class="mt-1.5 font-titulo text-sm uppercase tracking-[0.32em] text-ouro-400">Seção de Comunicações</p>
+            <div class="mt-5 h-px w-24 bg-gradient-to-r from-transparent via-ouro-500/70 to-transparent"></div>
+          </div>
+          <div class="cartao p-6">
+            <p class="titulo-secao mb-5">Acesso</p>
+            <div class="space-y-4">
+              <div>
+                <label class="mb-1.5 block text-xs font-medium uppercase tracking-wider text-noite-300">Número de guerra</label>
+                <input class="campo" placeholder="Ex.: 231">
+              </div>
+              <div>
+                <label class="mb-1.5 block text-xs font-medium uppercase tracking-wider text-noite-300">Senha</label>
+                <input class="campo" type="password" value="••••••••">
+              </div>
+              <button class="botao-ouro">Entrar</button>
+              <p class="w-full pt-1 text-center text-sm text-noite-300">Primeira vez? <span class="text-ouro-300">Criar acesso</span></p>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <!-- ===== TELA 2: MINHA SEMANA ===== -->
+    <div>
+      <p class="mb-2 text-xs uppercase tracking-widest text-noite-300">2 · Minha semana (militar)</p>
+      <div class="cartao relative w-[400px] overflow-hidden" style="height:760px">
+        <main class="h-full overflow-y-auto px-4 pb-32 pt-6">
+          <header class="mb-6">
+            <div class="flex items-center gap-3.5">
+              <div class="shrink-0 rounded-2xl border border-ouro-500/25 bg-noite-950/50 p-1.5">
+                <span class="emb" style="width:48px;height:48px"></span>
+              </div>
+              <div class="min-w-0 flex-1">
+                <p class="font-titulo text-[11px] font-semibold uppercase tracking-[0.3em] text-ouro-400">Arranchamento</p>
+                <h1 class="truncate font-titulo text-2xl font-semibold uppercase leading-tight tracking-wide text-white">Minha semana</h1>
+                <p class="mt-0.5 truncate text-sm text-noite-300">3º SGT BORGES</p>
+              </div>
+              <div class="flex shrink-0 flex-col items-end gap-1.5">
+                <span class="rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-1 text-xs font-medium text-noite-200">Painel</span>
+                <span class="rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-1 text-xs font-medium text-noite-200">Sair</span>
+              </div>
+            </div>
+            <div class="mt-4 h-px bg-gradient-to-r from-ouro-500/60 via-white/10 to-transparent"></div>
+          </header>
+
+          <div class="cartao mb-4 flex items-center justify-between px-4 py-3">
+            <div>
+              <p class="titulo-secao">Semana a arranchar</p>
+              <p class="mt-1 font-titulo text-xl font-semibold tracking-wide text-white">08/09 — 14/09</p>
+            </div>
+            <div class="text-right">
+              <p class="font-titulo text-3xl font-bold leading-none text-ouro-400">11</p>
+              <p class="text-[11px] uppercase tracking-wider text-noite-300">refeições</p>
+            </div>
+          </div>
+
+          <div class="space-y-2.5" id="dias"></div>
+        </main>
+        <div class="absolute inset-x-0 bottom-0 border-t border-white/10 bg-noite-950/85 px-4 pb-5 pt-3 backdrop-blur-md">
+          <button class="botao-ouro">Enviar arranchamento</button>
+          <p class="mt-2 text-center text-[11px] text-noite-400">Pode alterar e reenviar quantas vezes quiser até o prazo da seção.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== TELA 3: PAINEL ===== -->
+    <div>
+      <p class="mb-2 text-xs uppercase tracking-widest text-noite-300">3 · Painel (seção)</p>
+      <div class="cartao w-[560px] overflow-hidden" style="height:760px">
+        <main class="h-full overflow-y-auto px-4 pb-10 pt-6">
+          <header class="mb-6">
+            <div class="flex items-center gap-3.5">
+              <div class="shrink-0 rounded-2xl border border-ouro-500/25 bg-noite-950/50 p-1.5">
+                <span class="emb" style="width:48px;height:48px"></span>
+              </div>
+              <div class="min-w-0 flex-1">
+                <p class="font-titulo text-[11px] font-semibold uppercase tracking-[0.3em] text-ouro-400">Arranchamento</p>
+                <h1 class="truncate font-titulo text-2xl font-semibold uppercase leading-tight tracking-wide text-white">Painel da seção</h1>
+                <p class="mt-0.5 truncate text-sm text-noite-300">Semana de 08/09 a 14/09</p>
+              </div>
+              <span class="rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-1 text-xs font-medium text-noite-200">Minha semana</span>
+            </div>
+            <div class="mt-4 h-px bg-gradient-to-r from-ouro-500/60 via-white/10 to-transparent"></div>
+          </header>
+
+          <div class="mb-4 flex items-center justify-between gap-2">
+            <button class="botao-fantasma">← Anterior</button>
+            <p class="font-titulo text-sm uppercase tracking-[0.2em] text-noite-300">Próxima semana</p>
+            <button class="botao-fantasma">Próxima →</button>
+          </div>
+
+          <div class="mb-4 flex gap-1.5 overflow-x-auto pb-1.5" id="tabs"></div>
+
+          <div class="mb-3 grid grid-cols-4 gap-2">
+            <div class="cartao px-3 py-3 text-center"><p class="font-titulo text-2xl font-bold leading-none text-white">40</p><p class="mt-1 text-[10px] uppercase tracking-wider text-noite-300">Café</p></div>
+            <div class="cartao px-3 py-3 text-center"><p class="font-titulo text-2xl font-bold leading-none text-white">55</p><p class="mt-1 text-[10px] uppercase tracking-wider text-noite-300">Almoço</p></div>
+            <div class="cartao px-3 py-3 text-center"><p class="font-titulo text-2xl font-bold leading-none text-white">30</p><p class="mt-1 text-[10px] uppercase tracking-wider text-noite-300">Janta</p></div>
+            <div class="cartao border-ouro-500/40 bg-ouro-500/[0.08] px-3 py-3 text-center"><p class="font-titulo text-2xl font-bold leading-none text-ouro-300">125</p><p class="mt-1 text-[10px] uppercase tracking-wider text-noite-300">Completa</p></div>
+          </div>
+
+          <div class="cartao overflow-hidden">
+            <div class="border-b border-white/[0.07] px-4 py-3"><p class="titulo-secao">Etapas reduzidas por categoria</p></div>
+            <table class="w-full text-sm">
+              <thead><tr class="text-left text-[11px] uppercase tracking-wider text-noite-300">
+                <th class="px-4 py-2 font-medium">Categoria</th><th class="px-2 py-2 text-right font-medium">Café</th>
+                <th class="px-2 py-2 text-right font-medium">Almoço</th><th class="px-2 py-2 text-right font-medium">Janta</th>
+                <th class="px-4 py-2 text-right font-medium">Completa</th></tr></thead>
+              <tbody>
+                <tr class="border-t border-white/[0.06]"><td class="px-4 py-2.5 text-noite-100">Oficial</td><td class="px-2 py-2.5 text-right tabular-nums text-noite-200">1</td><td class="px-2 py-2.5 text-right tabular-nums text-noite-200">2</td><td class="px-2 py-2.5 text-right tabular-nums text-noite-200">0</td><td class="px-4 py-2.5 text-right font-semibold tabular-nums text-ouro-300">3</td></tr>
+                <tr class="border-t border-white/[0.06]"><td class="px-4 py-2.5 text-noite-100">Subten/Sgt</td><td class="px-2 py-2.5 text-right tabular-nums text-noite-200">3</td><td class="px-2 py-2.5 text-right tabular-nums text-noite-200">9</td><td class="px-2 py-2.5 text-right tabular-nums text-noite-200">3</td><td class="px-4 py-2.5 text-right font-semibold tabular-nums text-ouro-300">15</td></tr>
+                <tr class="border-t border-white/[0.06]"><td class="px-4 py-2.5 text-noite-100">Cabo/Sd</td><td class="px-2 py-2.5 text-right tabular-nums text-noite-200">36</td><td class="px-2 py-2.5 text-right tabular-nums text-noite-200">44</td><td class="px-2 py-2.5 text-right tabular-nums text-noite-200">27</td><td class="px-4 py-2.5 text-right font-semibold tabular-nums text-ouro-300">107</td></tr>
+                <tr class="border-t border-ouro-500/30 bg-ouro-500/[0.06]">
+                  <td class="px-4 py-2.5 font-titulo text-base font-semibold uppercase tracking-wider text-white">Soma</td>
+                  <td class="px-2 py-2.5 text-right font-semibold tabular-nums text-white">40</td>
+                  <td class="px-2 py-2.5 text-right font-semibold tabular-nums text-white">55</td>
+                  <td class="px-2 py-2.5 text-right font-semibold tabular-nums text-white">30</td>
+                  <td class="px-4 py-2.5 text-right font-semibold tabular-nums text-ouro-300">125</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <button class="botao-ouro mt-4">Baixar planilha da semana</button>
+
+          <section class="mt-8">
+            <div class="mb-3 flex items-end justify-between">
+              <h2 class="font-titulo text-lg font-semibold uppercase tracking-wide text-white">Ainda não responderam</h2>
+              <span class="text-sm tabular-nums text-noite-300">54/61</span>
+            </div>
+            <div class="mb-3 h-1.5 overflow-hidden rounded-full bg-white/[0.07]">
+              <div class="h-full rounded-full bg-gradient-to-r from-ouro-500 to-ouro-300" style="width:88%"></div>
+            </div>
+            <ul class="cartao divide-y divide-white/[0.06] overflow-hidden">
+              <li class="flex items-center justify-between px-4 py-2.5 text-sm"><span class="text-noite-100">3º SGT TURINO</span><span class="rounded-md border border-white/10 px-2 py-0.5 text-[11px] uppercase tracking-wider text-noite-300">Subten/Sgt</span></li>
+              <li class="flex items-center justify-between px-4 py-2.5 text-sm"><span class="text-noite-100">CB CARVALHO</span><span class="rounded-md border border-white/10 px-2 py-0.5 text-[11px] uppercase tracking-wider text-noite-300">Cabo/Sd</span></li>
+              <li class="flex items-center justify-between px-4 py-2.5 text-sm"><span class="text-noite-100">Nº 421</span><span class="rounded-md border border-white/10 px-2 py-0.5 text-[11px] uppercase tracking-wider text-noite-300">Cabo/Sd</span></li>
+            </ul>
+          </section>
+        </main>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+document.querySelectorAll(".emb").forEach(function(el){
+  var s = document.getElementById("emb").content.cloneNode(true).querySelector("svg");
+  s.setAttribute("width", el.style.width); s.setAttribute("height", el.style.height);
+  el.appendChild(s);
+});
+
+var DIAS=[["Segunda","08/09"],["Terça","09/09"],["Quarta","10/09"],["Quinta","11/09"],["Sexta","12/09"],["Sábado","13/09"],["Domingo","14/09"]];
+var REF=[["cafe","Café"],["almoco","Almoço"],["janta","Janta"]];
+var MARC=[[1,1,1],[1,1,0],[1,1,1],[0,1,0],[1,1,0],[0,0,0],[0,1,0]];
+var ICON={
+  cafe:'<path d="M4 9h13v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V9Z"/><path d="M17 10h1.5a2.5 2.5 0 0 1 0 5H17"/><path d="M8 3v2.5M12 3v2.5"/>',
+  almoco:'<path d="M6 3v8M9 3v8M7.5 11v10"/><path d="M16.5 3c-1.5 1.5-1.5 6 0 7.5V21"/>',
+  janta:'<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z"/>'
+};
+document.getElementById("dias").innerHTML = DIAS.map(function(d,i){
+  var fds = i>=5, n = MARC[i].reduce(function(a,b){return a+b;},0);
+  return '<section class="cartao overflow-hidden">'+
+    '<div class="flex items-center justify-between border-b border-white/[0.07] px-4 py-2.5">'+
+      '<div class="flex items-baseline gap-2.5">'+
+        '<span class="font-titulo text-lg font-semibold uppercase tracking-wide '+(fds?'text-ouro-300':'text-white')+'">'+d[0]+'</span>'+
+        '<span class="text-xs tabular-nums text-noite-300">'+d[1]+'</span>'+
+        (n>0?'<span class="inline-block h-1.5 w-1.5 rounded-full bg-ouro-400"></span>':'')+
+      '</div>'+
+      '<span class="px-2 py-1 text-[11px] font-medium uppercase tracking-wider text-noite-300">Dia inteiro</span>'+
+    '</div>'+
+    '<div class="grid grid-cols-3 gap-px bg-white/[0.06]">'+
+      REF.map(function(r,j){
+        var on = MARC[i][j];
+        return '<div class="flex flex-col items-center gap-1.5 py-3.5 '+(on?'bg-ouro-500/[0.16] text-ouro-200':'bg-noite-900/40 text-noite-300')+'">'+
+          '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="'+(on?'#e9cf7d':'#8095bd')+'" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'+ICON[r[0]]+'</svg>'+
+          '<span class="text-xs uppercase tracking-wider '+(on?'font-semibold':'')+'">'+r[1]+'</span></div>';
+      }).join("")+
+    '</div></section>';
+}).join("");
+
+document.getElementById("tabs").innerHTML = DIAS.map(function(d,i){
+  var on = i===4;
+  return '<div class="flex shrink-0 flex-col items-center rounded-xl border px-3.5 py-2 '+
+    (on?'border-ouro-500/70 bg-ouro-500/15 text-ouro-200':'border-white/10 bg-white/[0.03] text-noite-300')+'">'+
+    '<span class="font-titulo text-sm font-semibold uppercase tracking-wider">'+d[0].slice(0,3)+'</span>'+
+    '<span class="text-[11px] tabular-nums opacity-80">'+d[1]+'</span></div>';
+}).join("");
+</script>
+</body>
+</html>

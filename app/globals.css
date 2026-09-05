@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  background-color: #0a1020;
+  color: #dde5f4;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Brilho dourado no alto da tela + leve textura de linhas, para o fundo
+   nao ficar um azul chapado. Fica atras de todo o conteudo. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(120% 70% at 50% -20%, rgba(201, 162, 39, 0.16), transparent 60%),
+    radial-gradient(90% 60% at 100% 0%, rgba(49, 73, 122, 0.35), transparent 55%),
+    linear-gradient(180deg, #0e162b 0%, #0a1020 45%, #060a13 100%);
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.35;
+  background-image: repeating-linear-gradient(
+    115deg,
+    rgba(255, 255, 255, 0.025) 0px,
+    rgba(255, 255, 255, 0.025) 1px,
+    transparent 1px,
+    transparent 9px
+  );
+}
+
+@layer components {
+  /* Superficie padrao dos blocos de conteudo. */
+  .cartao {
+    @apply rounded-2xl border border-white/10 bg-white/[0.04] shadow-cartao backdrop-blur-sm;
+  }
+
+  .titulo-secao {
+    @apply font-titulo text-xs font-semibold uppercase tracking-[0.22em] text-ouro-400;
+  }
+
+  .campo {
+    @apply w-full rounded-xl border border-white/10 bg-noite-950/60 px-3.5 py-3 text-base
+           text-noite-100 placeholder-noite-400 outline-none transition
+           focus:border-ouro-500/70 focus:bg-noite-950/80 focus:ring-2 focus:ring-ouro-500/20;
+  }
+
+  .botao-ouro {
+    @apply w-full rounded-xl bg-gradient-to-b from-ouro-400 to-ouro-500 py-3
+           font-titulo text-base font-semibold uppercase tracking-[0.14em] text-noite-950
+           shadow-ouro transition active:scale-[0.99]
+           disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none;
+  }
+
+  .botao-fantasma {
+    @apply rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2 text-sm
+           text-noite-200 transition hover:border-white/20 hover:bg-white/[0.07];
+  }
+}
+
+/* Barra de rolagem discreta nas faixas horizontais (dias da semana). */
+.rolagem-fina::-webkit-scrollbar {
+  height: 4px;
+}
+.rolagem-fina::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+}
