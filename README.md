@@ -235,6 +235,12 @@ Os dados da OM (seção, companhia, cidade, quem assina) ficam em `lib/modelo.js
 **Campos que o site não tem** e continuam para preencher à mão: *Outra OM*,
 *QT Ativos*, *Complementos* e *C Esc*.
 
+**Erros de digitação na planilha.** A relação do Rancho é preenchida à mão e
+tem nomes escritos errado. Para quem entra pelo nome de guerra isso é grave: um
+nome errado é um login que não existe. As correções ficam em
+`modelo/correcoes-nome.txt`, no formato `COMO ESTÁ = COMO DEVE FICAR`, e valem
+também para a planilha gerada.
+
 **Nomes dos SD EV.** Na planilha do Rancho esse pessoal aparece só pelo
 número, e continua assim. Mas dentro do site o nome importa para saber quem é
 quem, então ele vem de `modelo/nomes-ev.txt` — uma linha por militar, no

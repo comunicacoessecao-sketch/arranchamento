@@ -1,0 +1,13 @@
+# Correções de nome.
+#
+# A planilha do Rancho é preenchida à mão e tem erros de digitação. Isso
+# atrapalha de verdade quem se identifica pelo NOME de guerra — sargento
+# para cima —, porque o nome é o que a pessoa digita para entrar.
+#
+# Formato: como está na planilha = como deve ficar
+# A comparação ignora acentos e maiúsculas, então não precisa acertar a
+# grafia errada exatamente.
+#
+# Depois de editar, rode: npm run autorizados
+
+LETÍCA RANGEL = LETÍCIA RANGEL

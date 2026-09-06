@@ -13,6 +13,7 @@ import path from "node:path";
 
 const PASTA_MODELO = "modelo";
 const NOMES_EV = path.join("modelo", "nomes-ev.txt");
+const CORRECOES = path.join("modelo", "correcoes-nome.txt");
 const SAIDA = path.join("supabase", "autorizados.sql");
 
 // Onde cada coisa esta na planilha (ver README).
@@ -97,7 +98,35 @@ async function lerNomesEv() {
   }
 }
 
+// A planilha e preenchida a mao e tem erros de digitacao. Para quem se
+// identifica pelo nome de guerra, um nome errado e um login que nao existe.
+async function lerCorrecoes() {
+  const chave = (n) =>
+    String(n || "")
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .toUpperCase()
+      .replace(/\s+/g, " ")
+      .trim();
+
+  try {
+    const conteudo = await readFile(CORRECOES, "utf8");
+    const mapa = new Map();
+    for (const linha of conteudo.split(/\r?\n/)) {
+      const limpa = linha.trim();
+      if (!limpa || limpa.startsWith("#")) continue;
+      const [errado, certo] = limpa.split("=");
+      if (errado && certo) mapa.set(chave(errado), certo.trim());
+    }
+    return { mapa, chave };
+  } catch {
+    return { mapa: new Map(), chave };
+  }
+}
+
 const nomesEv = await lerNomesEv();
+const correcoes = await lerCorrecoes();
+const corrigir = (nome) => correcoes.mapa.get(correcoes.chave(nome)) ?? nome;
 
 const pessoas = [];
 const semNome = [];
@@ -120,7 +149,8 @@ for (let l = PRIMEIRA; l <= ULTIMA; l++) {
 
   if (grupo === "cabo") {
     // Cabos aparecem como "106 CARVALHO": tem numero de guerra.
-    const { numero, nome } = separarNumero(valor);
+    const { numero, nome: bruto } = separarNumero(valor);
+    const nome = corrigir(bruto);
     pessoas.push({
       identificador: normalizarIdentificador(numero || nome),
       numero,
@@ -133,7 +163,8 @@ for (let l = PRIMEIRA; l <= ULTIMA; l++) {
   } else {
     // De sargento para cima nao ha numero de guerra: a identificacao e o
     // proprio nome de guerra.
-    const { posto, nome } = separarPosto(valor);
+    const { posto, nome: bruto } = separarPosto(valor);
+    const nome = corrigir(bruto);
     const pessoa = {
       identificador: normalizarIdentificador(nome),
       numero: null,
@@ -150,7 +181,7 @@ for (let l = PRIMEIRA; l <= ULTIMA; l++) {
 // --- Bloco 2: SD EP (numero com o nome a direita) ---
 for (let l = PRIMEIRA; l <= ULTIMA; l++) {
   const numero = texto(aba.getCell(l, COL_EP_NUMERO));
-  const nome = texto(aba.getCell(l, COL_EP_NOME));
+  const nome = corrigir(texto(aba.getCell(l, COL_EP_NOME)));
   if (!/^\d+$/.test(numero)) continue;
   pessoas.push({
     identificador: numero,
