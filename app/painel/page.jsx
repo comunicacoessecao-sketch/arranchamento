@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import {
@@ -11,6 +11,9 @@ import {
   paraISO,
   datasDaSemana,
   nomeExibicao,
+  diasQueFechamHoje,
+  horaLimiteEscrita,
+  rotuloDoDia,
 } from "@/lib/semana";
 import { relogioDoServidor } from "@/lib/hoje";
 import { calcularTotais, baixarExcel } from "@/lib/exportar";
@@ -28,6 +31,7 @@ export default function Painel() {
   const [hoje, setHoje] = useState(null);
   const [gerando, setGerando] = useState(false);
   const [erroExport, setErroExport] = useState("");
+  const jaEscolheuDia = useRef(false);
 
   // A data vem do servidor, nao do relogio do aparelho.
   useEffect(() => {
@@ -41,6 +45,18 @@ export default function Painel() {
   }
   const semanaISO = inicio ? paraISO(inicio) : null;
   const datas = inicio ? datasDaSemana(inicio) : null;
+
+  // Os dias que entram na planilha entregue hoje. Em geral um; na sexta,
+  // sábado, domingo e segunda saem juntos.
+  const fechamHoje = deslocamento === 0 ? diasQueFechamHoje(inicio, hoje) : [];
+
+  // Abre já no dia da entrega de hoje, que e o que a seção vai lancar.
+  // Uma vez só: depois disso quem manda e a escolha do administrador.
+  useEffect(() => {
+    if (jaEscolheuDia.current || !semanaISO) return;
+    jaEscolheuDia.current = true;
+    if (fechamHoje.length) setDiaAtivo(fechamHoje[0]);
+  }, [semanaISO, fechamHoje]);
 
   const carregar = useCallback(async () => {
     if (!semanaISO) return;
@@ -84,11 +100,11 @@ export default function Painel() {
     carregar();
   }, [carregar]);
 
-  async function baixar() {
+  async function baixar(escolhidos) {
     setErroExport("");
     setGerando(true);
     try {
-      await baixarExcel(militares, marcacoes, inicio);
+      await baixarExcel(militares, marcacoes, inicio, escolhidos);
     } catch (e) {
       console.error(e);
       setErroExport("Não foi possível gerar a planilha. Tente de novo ou avise o responsável.");
@@ -130,6 +146,19 @@ export default function Painel() {
           Próxima →
         </button>
       </div>
+
+      {fechamHoje.length > 0 && (
+        <div className="cartao mb-3 border-ouro-500/30 bg-ouro-500/[0.08] px-4 py-3">
+          <p className="titulo-secao">Entrega de hoje</p>
+          <p className="mt-1 font-titulo text-lg font-semibold uppercase tracking-wide text-ouro-200">
+            {fechamHoje.map((k) => `${rotuloDoDia(k)} ${datas[k].curta}`).join(" · ")}
+          </p>
+          <p className="mt-0.5 text-xs text-noite-300">
+            Fecha às {horaLimiteEscrita(fechamHoje[0])} — depois disso o militar
+            não consegue mais alterar.
+          </p>
+        </div>
+      )}
 
       {/* Dias */}
       <div className="rolagem-fina mb-4 flex gap-1.5 overflow-x-auto pb-1.5">
@@ -211,8 +240,23 @@ export default function Painel() {
         </table>
       </div>
 
-      <button onClick={baixar} disabled={gerando} className="botao-ouro mt-4">
-        {gerando ? "Gerando planilha…" : "Baixar planilha da semana"}
+      {/* O dia é o que a seção entrega todo dia; o período inteiro serve
+          para conferência e arquivo. */}
+      <button
+        onClick={() => baixar([diaAtivo])}
+        disabled={gerando}
+        className="botao-ouro mt-4"
+      >
+        {gerando
+          ? "Gerando planilha…"
+          : `Baixar ${rotuloDoDia(diaAtivo).toLowerCase()} ${datas[diaAtivo].curta}`}
+      </button>
+      <button
+        onClick={() => baixar()}
+        disabled={gerando}
+        className="botao-fantasma mt-2 w-full"
+      >
+        Baixar o período inteiro (7 abas)
       </button>
       <div className="mt-2">
         <Erro texto={erroExport} />

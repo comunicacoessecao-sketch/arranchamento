@@ -48,10 +48,16 @@ module.exports = {
           "0%, 100%": { opacity: "0.35" },
           "50%": { opacity: "0.9" },
         },
+        // Chama a atencao para o botao Enviar sem ficar piscando na cara.
+        pulsarLeve: {
+          "0%, 100%": { transform: "none", boxShadow: "0 8px 24px -10px rgba(201,162,39,0.55)" },
+          "50%": { transform: "translateY(-1px)", boxShadow: "0 10px 30px -8px rgba(201,162,39,0.85)" },
+        },
       },
       animation: {
         surgir: "surgir .35s ease-out both",
         pulsar: "pulsar 1.4s ease-in-out infinite",
+        "pulsar-leve": "pulsarLeve 2s ease-in-out infinite",
       },
     },
   },

@@ -7,3 +7,4 @@ node_modules
 arranchamento_*.xlsx
 exemplo.xlsx
 supabase/autorizados.sql
+.testes

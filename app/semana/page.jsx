@@ -26,6 +26,9 @@ export default function Semana() {
   const router = useRouter();
   const [militar, setMilitar] = useState(null);
   const [marcacoes, setMarcacoes] = useState(semanaVazia());
+  // O que esta gravado no banco. Comparado com `marcacoes`, diz se ha
+  // alteracao que o militar ainda nao enviou.
+  const [salvo, setSalvo] = useState(semanaVazia());
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
   const [aviso, setAviso] = useState("");
@@ -76,12 +79,27 @@ export default function Semana() {
       atual[l.dia] = { cafe: l.cafe, almoco: l.almoco, janta: l.janta };
     });
     setMarcacoes(atual);
+    setSalvo(atual);
     setCarregando(false);
   }, [router, semanaISO]);
 
   useEffect(() => {
     carregar();
   }, [carregar]);
+
+  const alterado = JSON.stringify(marcacoes) !== JSON.stringify(salvo);
+
+  // Segunda linha de defesa: se o militar fechar a aba com marcacao nao
+  // enviada, o navegador pergunta antes de deixar sair.
+  useEffect(() => {
+    if (!alterado) return;
+    const avisar = (e) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", avisar);
+    return () => window.removeEventListener("beforeunload", avisar);
+  }, [alterado]);
 
   // Um dia so pode ser mexido enquanto o prazo dele nao passou.
   function editavel(diaKey) {
@@ -122,13 +140,17 @@ export default function Semana() {
       return;
     }
 
+    // Foto do que esta sendo enviado, para nao confundir com alteracao que
+    // o militar faca enquanto a gravacao acontece.
+    const enviado = marcacoes;
+
     const registros = abertos.map((d) => ({
       militar_id: militar.id,
       semana: semanaISO,
       dia: d.key,
-      cafe: marcacoes[d.key].cafe,
-      almoco: marcacoes[d.key].almoco,
-      janta: marcacoes[d.key].janta,
+      cafe: enviado[d.key].cafe,
+      almoco: enviado[d.key].almoco,
+      janta: enviado[d.key].janta,
       atualizado_em: new Date().toISOString(),
     }));
 
@@ -142,6 +164,7 @@ export default function Semana() {
       setErro("Não foi possível enviar. Verifique a conexão e tente de novo.");
       return;
     }
+    setSalvo(enviado);
     setAviso("Arranchamento enviado.");
   }
 
@@ -326,21 +349,32 @@ export default function Semana() {
       {/* Barra fixa no rodape: fica sempre ao alcance do polegar no celular. */}
       <div className="fixed inset-x-0 bottom-0 z-10 border-t border-white/10 bg-noite-950/85 px-4 pb-5 pt-3 backdrop-blur-md">
         <div className="mx-auto max-w-md">
+          {alterado && (
+            <p className="mb-2 flex items-center justify-center gap-1.5 rounded-lg border border-ouro-500/40 bg-ouro-500/[0.12] py-1.5 text-[12px] font-medium text-ouro-200">
+              <Alerta /> Alterações não enviadas
+            </p>
+          )}
+
           <button
             onClick={enviar}
             disabled={salvando || diasAbertos === 0}
-            className="botao-ouro"
+            className={"botao-ouro" + (alterado ? " animate-pulsar-leve" : "")}
           >
             {salvando
               ? "Enviando…"
               : diasAbertos === 0
                 ? "Período fechado"
-                : "Enviar arranchamento"}
+                : alterado
+                  ? "Enviar alterações"
+                  : "Enviar arranchamento"}
           </button>
+
           <p className="mt-2 text-center text-[11px] text-noite-400">
             {diasAbertos === 0
               ? `O próximo período abre na segunda-feira ${curta(abreNaSegunda)}.`
-              : `Cada dia fecha às ${LIMITE_ESCRITO} da véspera. Sábado, domingo e segunda fecham juntos na sexta às ${LIMITE_FDS_ESCRITO}. Até lá, pode alterar e reenviar quantas vezes quiser.`}
+              : alterado
+                ? "Nada é gravado até você tocar em Enviar."
+                : `Cada dia fecha às ${LIMITE_ESCRITO} da véspera. Sábado, domingo e segunda fecham juntos na sexta às ${LIMITE_FDS_ESCRITO}.`}
           </p>
         </div>
       </div>
@@ -390,6 +424,15 @@ function Cadeado() {
     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
       <rect x="4" y="10" width="16" height="11" rx="2" />
       <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+    </svg>
+  );
+}
+
+function Alerta() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3 2 20h20L12 3Z" />
+      <path d="M12 10v4M12 17.5v.01" />
     </svg>
   );
 }

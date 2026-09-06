@@ -96,6 +96,13 @@ npm run dev
 
 Acesse http://localhost:3000
 
+Para conferir as regras de período e prazo, que são as mais fáceis de
+quebrar sem perceber:
+
+```bash
+npm test
+```
+
 ---
 
 ## Como funciona no dia a dia
@@ -141,9 +148,13 @@ o servidor não responder, ele usa o relógio do aparelho e avisa na tela.
 
 O administrador vê o mesmo período no Painel, com **← Anterior** e
 **Próxima →** para consultar ou baixar a planilha de qualquer período, inclusive
-os já passados. Como a seção exporta todo dia por volta das 14h, o botão de
-baixar a planilha pode ser usado quantas vezes for preciso — ele sempre reflete
-o que está marcado naquele momento.
+os já passados.
+
+O Painel abre já no **dia da entrega de hoje** — aquele cujo prazo vence hoje —
+e mostra uma tarja dizendo qual é e a que horas fecha. O botão principal baixa
+**só esse dia** (uma aba), que é o que vai para o Rancho; abaixo dele há a opção
+de baixar o período inteiro, com as sete abas, para conferência e arquivo. Pode
+baixar quantas vezes quiser — reflete sempre o que está marcado naquele momento.
 
 ### O prazo de cada dia
 
