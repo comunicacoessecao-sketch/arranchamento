@@ -12,7 +12,7 @@ import {
   datasDaSemana,
   nomeExibicao,
 } from "@/lib/semana";
-import { dataDeHoje } from "@/lib/hoje";
+import { relogioDoServidor } from "@/lib/hoje";
 import { calcularTotais, baixarExcel } from "@/lib/exportar";
 import { Cabecalho, LinkTopo, Carregando, Erro } from "@/components/ui";
 
@@ -31,7 +31,7 @@ export default function Painel() {
 
   // A data vem do servidor, nao do relogio do aparelho.
   useEffect(() => {
-    dataDeHoje().then(({ data }) => setHoje(data));
+    relogioDoServidor().then((relogio) => setHoje(relogio.hoje));
   }, []);
 
   let inicio = null;

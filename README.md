@@ -18,8 +18,10 @@ planilha do Rancho automaticamente.
 4. No menu lateral, abra **SQL Editor** → **New query**.
 5. Abra o arquivo `supabase/schema.sql` deste projeto, copie tudo, cole no
    editor e clique em **Run**. Isso cria as tabelas e as regras de segurança.
-   Depois repita com `supabase/02-cadastro-fechado.sql`, que fecha o cadastro
-   à relação da seção — os detalhes estão em "Quem pode se cadastrar".
+   Depois repita com `supabase/02-cadastro-fechado.sql` (fecha o cadastro à
+   relação da seção) e `supabase/03-prazo.sql` (faz valer o prazo de 13:30
+   de cada dia). Os detalhes estão em "Quem pode se cadastrar" e "O período
+   de arranchamento".
 6. Ainda no Supabase, vá em **Authentication** → **Providers** → **Email** e
    **desligue** a opção *Confirm email*. Sem isso o militar precisaria confirmar
    um e-mail que não existe.
@@ -142,6 +144,27 @@ O administrador vê o mesmo período no Painel, com **← Anterior** e
 os já passados. Como a seção exporta todo dia por volta das 14h, o botão de
 baixar a planilha pode ser usado quantas vezes for preciso — ele sempre reflete
 o que está marcado naquele momento.
+
+### O prazo de cada dia
+
+Cada dia fecha às **13:30 da véspera** — pouco antes de a seção recolher o
+papel para lançar na planilha entregue ao Rancho às 16h. Disso decorre:
+
+| Dia | Situação |
+|---|---|
+| ontem e antes | fechado |
+| hoje | fechado (fechou ontem às 13:30) |
+| amanhã | aberto só até hoje às 13:30 |
+| depois de amanhã em diante | aberto |
+
+Na tela, o dia fechado aparece esmaecido, com um cadeado, e não aceita toque —
+mas continua visível, para o militar conferir o que marcou. O dia que fecha
+hoje ganha um aviso "Fecha hoje às 13:30", e ele muda sozinho quando dá a hora,
+mesmo com a tela aberta.
+
+A regra também vale no banco (`supabase/03-prazo.sql`): uma gravação fora do
+prazo é recusada mesmo que alguém tente por fora do site. **O administrador
+escapa da regra**, para a seção conseguir corrigir algo à mão quando precisar.
 
 Para mudar o dia da virada, mexa em `inicioPeriodo()` e na ordem de `DIAS`, em
 `lib/semana.js`.

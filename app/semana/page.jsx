@@ -13,8 +13,10 @@ import {
   datasDaSemana,
   semanaVazia,
   nomeExibicao,
+  diaEditavel,
+  LIMITE_ESCRITO,
 } from "@/lib/semana";
-import { dataDeHoje } from "@/lib/hoje";
+import { relogioDoServidor, minutosAgora } from "@/lib/hoje";
 import { Cabecalho, LinkTopo, Erro, Aviso, Carregando } from "@/components/ui";
 
 export default function Semana() {
@@ -26,17 +28,20 @@ export default function Semana() {
   const [aviso, setAviso] = useState("");
   const [erro, setErro] = useState("");
 
-  // A data vem do servidor, nao do relogio do aparelho.
-  const [hoje, setHoje] = useState(null);
-  const [dataConfirmada, setDataConfirmada] = useState(true);
+  // A data e a hora vem do servidor, nao do relogio do aparelho.
+  const [relogio, setRelogio] = useState(null);
+  const [agoraMs, setAgoraMs] = useState(() => Date.now());
 
   useEffect(() => {
-    dataDeHoje().then(({ data, doServidor }) => {
-      setHoje(data);
-      setDataConfirmada(doServidor);
-    });
+    relogioDoServidor().then(setRelogio);
+    // Faz o corte das 13:30 valer mesmo com a tela aberta ha horas.
+    const t = setInterval(() => setAgoraMs(Date.now()), 30000);
+    return () => clearInterval(t);
   }, []);
 
+  const hoje = relogio?.hoje ?? null;
+  const dataConfirmada = relogio ? relogio.doServidor : true;
+  const minutos = minutosAgora(relogio, agoraMs);
   const inicio = hoje ? inicioPeriodo(hoje) : null;
   const semanaISO = inicio ? paraISO(inicio) : null;
   const datas = inicio ? datasDaSemana(inicio) : null;
@@ -75,7 +80,13 @@ export default function Semana() {
     carregar();
   }, [carregar]);
 
+  // Um dia so pode ser mexido enquanto o prazo dele nao passou.
+  function editavel(diaKey) {
+    return diaEditavel(datas?.[diaKey]?.data, hoje, minutos);
+  }
+
   function alternar(diaKey, refeicaoKey) {
+    if (!editavel(diaKey)) return;
     setAviso("");
     setMarcacoes((prev) => ({
       ...prev,
@@ -84,6 +95,7 @@ export default function Semana() {
   }
 
   function marcarTodas(diaKey) {
+    if (!editavel(diaKey)) return;
     const todasMarcadas = REFEICOES.every((r) => marcacoes[diaKey][r.key]);
     setAviso("");
     setMarcacoes((prev) => ({
@@ -97,7 +109,17 @@ export default function Semana() {
     setErro("");
     setAviso("");
 
-    const registros = DIAS.map((d) => ({
+    // Dias fechados nao vao no envio: ja foram entregues ao Rancho, e o
+    // banco recusaria a gravacao de qualquer forma.
+    const abertos = DIAS.filter((d) => editavel(d.key));
+
+    if (!abertos.length) {
+      setSalvando(false);
+      setErro("Todos os dias deste período já fecharam. Nada a enviar.");
+      return;
+    }
+
+    const registros = abertos.map((d) => ({
       militar_id: militar.id,
       semana: semanaISO,
       dia: d.key,
@@ -113,6 +135,7 @@ export default function Semana() {
 
     setSalvando(false);
     if (error) {
+      console.error("envio:", error);
       setErro("Não foi possível enviar. Verifique a conexão e tente de novo.");
       return;
     }
@@ -165,11 +188,17 @@ export default function Semana() {
         {DIAS.map((d, i) => {
           const fds = d.key === "sab" || d.key === "dom";
           const marcadasNoDia = REFEICOES.filter((r) => marcacoes[d.key][r.key]).length;
+          const aberto = editavel(d.key);
+          // Fecha hoje: e o dia seguinte, ainda dentro do horário.
+          const fechaHoje =
+            aberto && Math.round((datas[d.key].data - hoje) / 86400000) === 1;
 
           return (
             <section
               key={d.key}
-              className="cartao animate-surgir overflow-hidden"
+              className={
+                "cartao animate-surgir overflow-hidden " + (aberto ? "" : "opacity-60")
+              }
               style={{ animationDelay: `${i * 35}ms` }}
             >
               <div className="flex items-center justify-between border-b border-white/[0.07] px-4 py-2.5">
@@ -177,7 +206,7 @@ export default function Semana() {
                   <span
                     className={
                       "font-titulo text-lg font-semibold uppercase tracking-wide " +
-                      (fds ? "text-ouro-300" : "text-white")
+                      (!aberto ? "text-noite-300" : fds ? "text-ouro-300" : "text-white")
                     }
                   >
                     {d.label}
@@ -186,16 +215,33 @@ export default function Semana() {
                     {datas[d.key].curta}
                   </span>
                   {marcadasNoDia > 0 && (
-                    <span className="h-1.5 w-1.5 rounded-full bg-ouro-400" />
+                    <span
+                      className={
+                        "h-1.5 w-1.5 rounded-full " + (aberto ? "bg-ouro-400" : "bg-noite-400")
+                      }
+                    />
                   )}
                 </div>
-                <button
-                  onClick={() => marcarTodas(d.key)}
-                  className="rounded-lg px-2 py-1 text-[11px] font-medium uppercase tracking-wider text-noite-300 transition hover:bg-white/5 hover:text-ouro-300"
-                >
-                  Dia inteiro
-                </button>
+
+                {aberto ? (
+                  <button
+                    onClick={() => marcarTodas(d.key)}
+                    className="rounded-lg px-2 py-1 text-[11px] font-medium uppercase tracking-wider text-noite-300 transition hover:bg-white/5 hover:text-ouro-300"
+                  >
+                    Dia inteiro
+                  </button>
+                ) : (
+                  <span className="flex items-center gap-1 text-[11px] font-medium uppercase tracking-wider text-noite-400">
+                    <Cadeado /> Fechado
+                  </span>
+                )}
               </div>
+
+              {fechaHoje && (
+                <p className="border-b border-white/[0.07] bg-ouro-500/[0.07] px-4 py-1.5 text-[11px] text-ouro-300">
+                  Fecha hoje às {LIMITE_ESCRITO}
+                </p>
+              )}
 
               <div className="grid grid-cols-3 gap-px bg-white/[0.06]">
                 {REFEICOES.map((r) => {
@@ -205,11 +251,17 @@ export default function Semana() {
                       key={r.key}
                       onClick={() => alternar(d.key, r.key)}
                       aria-pressed={ativo}
+                      disabled={!aberto}
                       className={
                         "flex flex-col items-center gap-1.5 py-3.5 transition " +
                         (ativo
                           ? "bg-ouro-500/[0.16] text-ouro-200"
-                          : "bg-noite-900/40 text-noite-300 hover:bg-white/[0.04]")
+                          : "bg-noite-900/40 text-noite-300") +
+                        (aberto
+                          ? ativo
+                            ? ""
+                            : " hover:bg-white/[0.04]"
+                          : " cursor-not-allowed")
                       }
                     >
                       <IconeRefeicao tipo={r.key} ativo={ativo} />
@@ -248,7 +300,8 @@ export default function Semana() {
             {salvando ? "Enviando…" : "Enviar arranchamento"}
           </button>
           <p className="mt-2 text-center text-[11px] text-noite-400">
-            Pode alterar e reenviar quantas vezes quiser até o prazo da seção.
+            Cada dia fecha às {LIMITE_ESCRITO} da véspera. Até lá, pode alterar e
+            reenviar quantas vezes quiser.
           </p>
         </div>
       </div>
@@ -289,6 +342,15 @@ function IconeRefeicao({ tipo, ativo }) {
   return (
     <svg {...comum}>
       <path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z" />
+    </svg>
+  );
+}
+
+function Cadeado() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="4" y="10" width="16" height="11" rx="2" />
+      <path d="M8 10V7a4 4 0 0 1 8 0v3" />
     </svg>
   );
 }
