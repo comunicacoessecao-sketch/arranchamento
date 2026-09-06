@@ -139,9 +139,9 @@ export default function Painel() {
   const esperado = autorizados.length || militares.length;
   const percentual = esperado ? Math.round((responderam / esperado) * 100) : 0;
 
-  const rotuloAutorizado = (a) =>
-    [a.posto_grad, a.nome].filter(Boolean).join(" ") ||
-    (a.numero_guerra ? `Nº ${a.numero_guerra}` : a.identificador);
+  // Mesma forma usada para quem ja tem acesso, para as duas listas ficarem
+  // comparaveis lado a lado.
+  const rotuloAutorizado = (a) => nomeExibicao(a);
 
   return (
     <main className="mx-auto w-full max-w-2xl px-4 pb-16 pt-7">

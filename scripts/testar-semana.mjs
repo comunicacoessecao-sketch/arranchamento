@@ -24,6 +24,7 @@ import {
   diaEditavel,
   horaLimiteEscrita,
   semanaVazia,
+  nomeExibicao,
 } from "../lib/semana.js";
 
 // Semana de referência: terça 08/09/2026 a segunda 14/09/2026.
@@ -190,4 +191,69 @@ test("semanaVazia traz os sete dias sem nada marcado", () => {
   for (const dia of DIAS) {
     assert.deepEqual(vazia[dia.key], { cafe: false, almoco: false, janta: false });
   }
+});
+
+// ---------------------------------------------------------------------
+// A planilha do Rancho
+// ---------------------------------------------------------------------
+test("a planilha nunca escreve o nome dos SD EV", async () => {
+  // Os SD EV passaram a ter nome no site, para dar para identificar quem é
+  // nas listas. Na planilha do Rancho eles continuam só com o número — e
+  // isso não pode se perder numa alteração futura.
+  const ExcelJS = (await import("exceljs")).default;
+  const { montarPasta } = await import("../lib/exportar.js");
+
+  const militares = [
+    {
+      id: "a",
+      identificador: "409",
+      numero_guerra: "409",
+      nome: "SUTIL",
+      posto_grad: "SD",
+      categoria: "Cabo/Sd",
+      tipo_sd: "EV",
+      bloco: "sdEv",
+      ordem: 1,
+    },
+  ];
+  const marcacoes = { a: { ter: { cafe: true, almoco: false, janta: false } } };
+
+  const { pasta } = montarPasta(ExcelJS, militares, marcacoes, TER, ["ter"]);
+  const aba = pasta.worksheets[0];
+
+  // Coluna J: número do primeiro bloco de SD EV.
+  assert.equal(aba.getCell(18, 10).text, "409");
+
+  let vazou = false;
+  aba.eachRow((linha) =>
+    linha.eachCell((celula) => {
+      // Célula mesclada sem valor faz o ExcelJS estourar ao ler `.text`.
+      let conteudo = "";
+      try {
+        conteudo = String(celula.text ?? "");
+      } catch {
+        conteudo = "";
+      }
+      if (conteudo.toUpperCase().includes("SUTIL")) vazou = true;
+    })
+  );
+  assert.equal(vazou, false, "o nome do SD EV apareceu na planilha");
+});
+
+test("no site, todo militar sai identificável", () => {
+  // Era o problema: sem o número, os soldados viravam todos "SD" nas
+  // listas do painel e não dava para saber de quem se tratava.
+  const casos = [
+    [{ posto_grad: "CAP", numero_guerra: null, nome: "SIQUEIRA" }, "CAP SIQUEIRA"],
+    [{ posto_grad: "3º SGT", numero_guerra: null, nome: "BORGES" }, "3º SGT BORGES"],
+    [{ posto_grad: "CB", numero_guerra: "106", nome: "CARVALHO" }, "CB 106 CARVALHO"],
+    [{ posto_grad: "SD", numero_guerra: "231", nome: "LEONAN" }, "SD 231 LEONAN"],
+    [{ posto_grad: "SD", numero_guerra: "409", nome: "SUTIL" }, "SD 409 SUTIL"],
+    // Soldado que ainda não tem nome na relação: pelo menos o número sai.
+    [{ posto_grad: "SD", numero_guerra: "442", nome: null }, "SD 442"],
+  ];
+  for (const [militar, esperado] of casos) {
+    assert.equal(nomeExibicao(militar), esperado);
+  }
+  assert.equal(nomeExibicao(null), "");
 });

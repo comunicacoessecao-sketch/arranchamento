@@ -8,7 +8,7 @@
     "start": "next start",
     "exemplo": "esbuild scripts/gerar-exemplo.mjs --bundle --platform=node --format=esm --outfile=node_modules/.cache/gerar.mjs --external:exceljs && node node_modules/.cache/gerar.mjs exemplo.xlsx",
     "autorizados": "esbuild scripts/gerar-autorizados.mjs --bundle --platform=node --format=esm --outfile=node_modules/.cache/autorizados.mjs --external:exceljs && node node_modules/.cache/autorizados.mjs",
-    "test": "esbuild scripts/testar-semana.mjs --bundle --platform=node --format=esm --outfile=.testes/testes.mjs && node --test .testes/testes.mjs"
+    "test": "esbuild scripts/testar-semana.mjs --bundle --platform=node --format=esm --external:exceljs --external:exceljs/* --outfile=.testes/testes.mjs && node --test .testes/testes.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",

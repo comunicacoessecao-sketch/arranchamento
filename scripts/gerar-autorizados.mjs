@@ -8,10 +8,11 @@
 // do Supabase. Se precisar de novo, e so rodar o comando outra vez.
 
 import ExcelJS from "exceljs";
-import { readdir, writeFile } from "node:fs/promises";
+import { readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 const PASTA_MODELO = "modelo";
+const NOMES_EV = path.join("modelo", "nomes-ev.txt");
 const SAIDA = path.join("supabase", "autorizados.sql");
 
 // Onde cada coisa esta na planilha (ver README).
@@ -75,6 +76,28 @@ function normalizarIdentificador(valor) {
     .replace(/[^a-z0-9]+/g, ".")
     .replace(/^\.+|\.+$/g, "");
 }
+
+// Os SD EV aparecem na planilha so pelo numero. Os nomes vem de uma lista
+// a parte, e servem apenas para identificacao dentro do site — a planilha
+// do Rancho continua saindo so com o numero.
+async function lerNomesEv() {
+  try {
+    const conteudo = await readFile(NOMES_EV, "utf8");
+    const mapa = new Map();
+    for (const linha of conteudo.split(/\r?\n/)) {
+      const limpa = linha.trim();
+      if (!limpa || limpa.startsWith("#")) continue;
+      const m = limpa.match(/^(\d+)\s+(.+)$/);
+      if (m) mapa.set(m[1], m[2].trim());
+    }
+    return mapa;
+  } catch {
+    console.warn(`(sem ${NOMES_EV}: os SD EV ficam só com o número)`);
+    return new Map();
+  }
+}
+
+const nomesEv = await lerNomesEv();
 
 const pessoas = [];
 const semNome = [];
@@ -148,7 +171,7 @@ for (const col of COLS_EV) {
     pessoas.push({
       identificador: numero,
       numero,
-      nome: null,
+      nome: nomesEv.get(numero) || null,
       ordem: ++ordem,
       posto: "SD",
       categoria: "Cabo/Sd",
@@ -195,6 +218,19 @@ on conflict (identificador) do update set
   categoria     = excluded.categoria,
   bloco         = excluded.bloco,
   ordem         = excluded.ordem;
+
+-- Quem ja criou acesso guardou uma copia dos proprios dados no momento do
+-- cadastro. Esta linha traz de volta o que mudou na relacao — e o que faz
+-- os nomes dos SD EV aparecerem para quem se cadastrou antes deles.
+update militares m set
+  numero_guerra = a.numero_guerra,
+  nome          = a.nome,
+  posto_grad    = a.posto_grad,
+  categoria     = a.categoria,
+  bloco         = a.bloco,
+  ordem         = a.ordem
+from autorizados a
+where a.identificador = m.identificador;
 `;
 
 if (repetidos.length) {

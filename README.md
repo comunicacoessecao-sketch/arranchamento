@@ -235,6 +235,12 @@ Os dados da OM (seção, companhia, cidade, quem assina) ficam em `lib/modelo.js
 **Campos que o site não tem** e continuam para preencher à mão: *Outra OM*,
 *QT Ativos*, *Complementos* e *C Esc*.
 
+**Nomes dos SD EV.** Na planilha do Rancho esse pessoal aparece só pelo
+número, e continua assim. Mas dentro do site o nome importa para saber quem é
+quem, então ele vem de `modelo/nomes-ev.txt` — uma linha por militar, no
+formato `409 SUTIL`. Para incluir ou corrigir alguém, edite esse arquivo e rode
+`npm run autorizados` de novo.
+
 **Cabo ou soldado?** Quem é cabo e quem é SD EP fica em blocos diferentes da
 planilha. Essa classificação vem pronta da relação de autorizados (coluna
 `bloco`), gravada no militar no momento do cadastro — não é deduzida do que
