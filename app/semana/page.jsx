@@ -157,6 +157,17 @@ export default function Semana() {
     0
   );
 
+  // No fim de semana o periodo em circulacao ja fechou inteiro e o proximo
+  // so nasce na segunda — nao ha nada a fazer, e a tela precisa dizer isso.
+  const diasAbertos = DIAS.filter((d) => editavel(d.key)).length;
+  const proximoInicio = new Date(inicio);
+  proximoInicio.setDate(proximoInicio.getDate() + 7);
+  const proximoFim = new Date(proximoInicio);
+  proximoFim.setDate(proximoFim.getDate() + 6);
+  const abreNaSegunda = new Date(inicio);
+  abreNaSegunda.setDate(abreNaSegunda.getDate() + 6);
+  const curta = (d) => d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+
   return (
     <main className="mx-auto w-full max-w-md px-4 pb-40 pt-7">
       <Cabecalho
@@ -186,6 +197,19 @@ export default function Semana() {
           </p>
         </div>
       </div>
+
+      {diasAbertos === 0 && (
+        <div className="cartao mb-4 border-ouro-500/30 bg-ouro-500/[0.07] px-4 py-3.5">
+          <p className="font-titulo text-base font-semibold uppercase tracking-wide text-ouro-200">
+            Este período já fechou
+          </p>
+          <p className="mt-1 text-sm leading-snug text-noite-200">
+            Todos os prazos venceram — abaixo fica o que você marcou, só para
+            conferência. O próximo período ({curta(proximoInicio)} a{" "}
+            {curta(proximoFim)}) abre na segunda-feira {curta(abreNaSegunda)}.
+          </p>
+        </div>
+      )}
 
       <div className="space-y-2.5">
         {DIAS.map((d, i) => {
@@ -302,13 +326,21 @@ export default function Semana() {
       {/* Barra fixa no rodape: fica sempre ao alcance do polegar no celular. */}
       <div className="fixed inset-x-0 bottom-0 z-10 border-t border-white/10 bg-noite-950/85 px-4 pb-5 pt-3 backdrop-blur-md">
         <div className="mx-auto max-w-md">
-          <button onClick={enviar} disabled={salvando} className="botao-ouro">
-            {salvando ? "Enviando…" : "Enviar arranchamento"}
+          <button
+            onClick={enviar}
+            disabled={salvando || diasAbertos === 0}
+            className="botao-ouro"
+          >
+            {salvando
+              ? "Enviando…"
+              : diasAbertos === 0
+                ? "Período fechado"
+                : "Enviar arranchamento"}
           </button>
           <p className="mt-2 text-center text-[11px] text-noite-400">
-            Cada dia fecha às {LIMITE_ESCRITO} da véspera. Sábado, domingo e
-            segunda fecham juntos na sexta às {LIMITE_FDS_ESCRITO}. Até lá, pode
-            alterar e reenviar quantas vezes quiser.
+            {diasAbertos === 0
+              ? `O próximo período abre na segunda-feira ${curta(abreNaSegunda)}.`
+              : `Cada dia fecha às ${LIMITE_ESCRITO} da véspera. Sábado, domingo e segunda fecham juntos na sexta às ${LIMITE_FDS_ESCRITO}. Até lá, pode alterar e reenviar quantas vezes quiser.`}
           </p>
         </div>
       </div>
