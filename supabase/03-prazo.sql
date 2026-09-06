@@ -30,15 +30,22 @@ as $$
 $$;
 
 -- Instante em que um dia do periodo deixa de aceitar alteracao.
+--
+-- Regra geral: 13:30 da vespera.
+-- Excecao: sabado, domingo e segunda sao entregues juntos na SEXTA, porque
+-- a seção nao esta no batalhao no fim de semana — os tres fecham as 10:00
+-- daquela sexta (o terceiro dia depois da terça que abre o periodo).
 create or replace function prazo_do_dia(p_semana date, p_dia text)
 returns timestamptz
 language sql
 immutable
 as $$
-  select (
-    ((p_semana + deslocamento_do_dia(p_dia) - 1) + time '13:30')
-    at time zone 'America/Sao_Paulo'
-  );
+  select case
+    when p_dia in ('sab', 'dom', 'seg')
+      then ((p_semana + 3) + time '10:00') at time zone 'America/Sao_Paulo'
+    else ((p_semana + deslocamento_do_dia(p_dia) - 1) + time '13:30')
+           at time zone 'America/Sao_Paulo'
+  end;
 $$;
 
 -- Recusa gravacao depois do prazo. O administrador escapa da regra, para
@@ -53,8 +60,10 @@ begin
   end if;
   if now() >= prazo_do_dia(new.semana, new.dia) then
     raise exception
-      'O prazo de % (%) ja passou: cada dia fecha as 13:30 da vespera.',
-      new.dia, new.semana + deslocamento_do_dia(new.dia)
+      'O prazo de % (%) ja passou. Ele fechou em %.',
+      new.dia,
+      new.semana + deslocamento_do_dia(new.dia),
+      prazo_do_dia(new.semana, new.dia)
       using errcode = 'check_violation';
   end if;
   return new;

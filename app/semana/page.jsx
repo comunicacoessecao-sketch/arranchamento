@@ -14,7 +14,10 @@ import {
   semanaVazia,
   nomeExibicao,
   diaEditavel,
+  prazoVenceHoje,
+  horaLimiteEscrita,
   LIMITE_ESCRITO,
+  LIMITE_FDS_ESCRITO,
 } from "@/lib/semana";
 import { relogioDoServidor, minutosAgora } from "@/lib/hoje";
 import { Cabecalho, LinkTopo, Erro, Aviso, Carregando } from "@/components/ui";
@@ -82,7 +85,7 @@ export default function Semana() {
 
   // Um dia so pode ser mexido enquanto o prazo dele nao passou.
   function editavel(diaKey) {
-    return diaEditavel(datas?.[diaKey]?.data, hoje, minutos);
+    return diaEditavel(diaKey, inicio, hoje, minutos);
   }
 
   function alternar(diaKey, refeicaoKey) {
@@ -189,9 +192,10 @@ export default function Semana() {
           const fds = d.key === "sab" || d.key === "dom";
           const marcadasNoDia = REFEICOES.filter((r) => marcacoes[d.key][r.key]).length;
           const aberto = editavel(d.key);
-          // Fecha hoje: e o dia seguinte, ainda dentro do horário.
-          const fechaHoje =
-            aberto && Math.round((datas[d.key].data - hoje) / 86400000) === 1;
+          const fechaHoje = aberto && prazoVenceHoje(d.key, inicio, hoje);
+          // Sábado, domingo e segunda saem juntos na sexta — vale avisar
+          // antes, porque fecham bem mais cedo que os outros.
+          const naSexta = ["sab", "dom", "seg"].includes(d.key);
 
           return (
             <section
@@ -237,9 +241,11 @@ export default function Semana() {
                 )}
               </div>
 
-              {fechaHoje && (
+              {aberto && (fechaHoje || naSexta) && (
                 <p className="border-b border-white/[0.07] bg-ouro-500/[0.07] px-4 py-1.5 text-[11px] text-ouro-300">
-                  Fecha hoje às {LIMITE_ESCRITO}
+                  {fechaHoje
+                    ? "Fecha hoje às " + horaLimiteEscrita(d.key)
+                    : "Fecha na sexta às " + LIMITE_FDS_ESCRITO}
                 </p>
               )}
 
@@ -300,8 +306,9 @@ export default function Semana() {
             {salvando ? "Enviando…" : "Enviar arranchamento"}
           </button>
           <p className="mt-2 text-center text-[11px] text-noite-400">
-            Cada dia fecha às {LIMITE_ESCRITO} da véspera. Até lá, pode alterar e
-            reenviar quantas vezes quiser.
+            Cada dia fecha às {LIMITE_ESCRITO} da véspera. Sábado, domingo e
+            segunda fecham juntos na sexta às {LIMITE_FDS_ESCRITO}. Até lá, pode
+            alterar e reenviar quantas vezes quiser.
           </p>
         </div>
       </div>
