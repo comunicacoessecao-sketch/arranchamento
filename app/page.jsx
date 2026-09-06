@@ -144,7 +144,7 @@ export default function Login() {
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-sm flex-col justify-center px-5 py-12">
       <div className="mb-8 flex animate-surgir flex-col items-center text-center">
-        <Emblema tamanho={92} />
+        <Emblema tamanho={92} aura />
         <h1 className="mt-5 font-titulo text-4xl font-bold uppercase tracking-[0.12em] text-white">
           Arranchamento
         </h1>

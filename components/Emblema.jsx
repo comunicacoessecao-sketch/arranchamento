@@ -10,25 +10,57 @@ import { useState } from "react";
  * sem mexer em codigo. Enquanto o arquivo nao existir, aparece o desenho
  * abaixo (raios cruzados e ondas de radio), que e so uma marca do site.
  */
-export default function Emblema({ tamanho = 64, className = "" }) {
+export default function Emblema({ tamanho = 64, className = "", aura = false }) {
   const [semImagem, setSemImagem] = useState(false);
 
-  if (!semImagem) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src="/emblema.png"
-        alt="Emblema da Arma de Comunicações"
-        width={tamanho}
-        height={tamanho}
-        onError={() => setSemImagem(true)}
-        className={`object-contain ${className}`}
-        style={{ width: tamanho, height: tamanho }}
-      />
-    );
-  }
+  const simbolo = semImagem ? (
+    <EmblemaDesenhado tamanho={tamanho} className={className} />
+  ) : (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/emblema.png"
+      alt="Emblema da Arma de Comunicações"
+      width={tamanho}
+      height={tamanho}
+      onError={() => setSemImagem(true)}
+      className={`object-contain ${className}`}
+      style={{ width: tamanho, height: tamanho }}
+    />
+  );
 
-  return <EmblemaDesenhado tamanho={tamanho} className={className} />;
+  if (!aura) return simbolo;
+
+  return <Aura tamanho={tamanho}>{simbolo}</Aura>;
+}
+
+/**
+ * Ondas de radio saindo do emblema — o que a Arma de Comunicacoes faz.
+ * Tres circulos que se expandem e somem, defasados entre si, mais um
+ * brilho fixo por tras. Lento e discreto de proposito: e ambiente, nao
+ * chamariz. Quem pediu menos animacao no sistema nao ve nada disso
+ * (a regra de prefers-reduced-motion esta em globals.css).
+ */
+function Aura({ tamanho, children }) {
+  return (
+    <span
+      className="relative inline-flex items-center justify-center"
+      style={{ width: tamanho, height: tamanho }}
+    >
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 rounded-full bg-ouro-400/15 blur-2xl"
+      />
+      {[0, 1, 2].map((i) => (
+        <span
+          key={i}
+          aria-hidden="true"
+          className="animate-ondas pointer-events-none absolute inset-0 rounded-full border border-ouro-400/45"
+          style={{ animationDelay: `${i * 1.6}s` }}
+        />
+      ))}
+      <span className="relative">{children}</span>
+    </span>
+  );
 }
 
 export function EmblemaDesenhado({ tamanho = 64, className = "" }) {

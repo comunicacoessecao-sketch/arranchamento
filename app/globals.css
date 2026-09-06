@@ -80,3 +80,13 @@ body::after {
   background: rgba(255, 255, 255, 0.12);
   border-radius: 999px;
 }
+
+/* Quem pediu menos animacao no sistema nao ve nada se mexendo. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-ondas,
+  .animate-pulsar,
+  .animate-pulsar-leve,
+  .animate-surgir {
+    animation: none !important;
+  }
+}

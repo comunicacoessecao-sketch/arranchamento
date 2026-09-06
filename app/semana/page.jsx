@@ -191,10 +191,18 @@ export default function Semana() {
   abreNaSegunda.setDate(abreNaSegunda.getDate() + 6);
   const curta = (d) => d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
 
+  // O que fecha hoje. Em geral um dia; na sexta, os três do fim de semana.
+  const fechamHoje = DIAS.filter((d) => editavel(d.key) && prazoVenceHoje(d.key, inicio, hoje));
+  const avisoDoDia = fechamHoje.length
+    ? `${fechamHoje.map((d) => `${d.label} ${datas[d.key].curta}`).join(", ")} ${
+        fechamHoje.length > 1 ? "fecham" : "fecha"
+      } hoje às ${horaLimiteEscrita(fechamHoje[0].key)}.`
+    : null;
+
   return (
-    <main className="mx-auto w-full max-w-md px-4 pb-40 pt-7">
+    <main className="mx-auto w-full max-w-md px-4 pb-52 pt-5">
       <Cabecalho
-        titulo="Meu arranchamento"
+        titulo="Minha semana"
         subtitulo={nomeExibicao(militar)}
         acoes={
           <>
@@ -204,7 +212,7 @@ export default function Semana() {
         }
       />
 
-      <div className="cartao mb-4 flex items-center justify-between px-4 py-3">
+      <div className="cartao mb-3 flex items-center justify-between px-4 py-2.5">
         <div>
           <p className="titulo-secao">Período a arranchar</p>
           <p className="mt-1 font-titulo text-xl font-semibold tracking-wide text-white">
@@ -234,105 +242,107 @@ export default function Semana() {
         </div>
       )}
 
-      <div className="space-y-2.5">
-        {DIAS.map((d, i) => {
-          const fds = d.key === "sab" || d.key === "dom";
-          const marcadasNoDia = REFEICOES.filter((r) => marcacoes[d.key][r.key]).length;
-          const aberto = editavel(d.key);
-          const fechaHoje = aberto && prazoVenceHoje(d.key, inicio, hoje);
-          // Sábado, domingo e segunda saem juntos na sexta — vale avisar
-          // antes, porque fecham bem mais cedo que os outros.
-          const naSexta = ["sab", "dom", "seg"].includes(d.key);
+      {/* Aviso do que fecha hoje: fica uma vez aqui em cima, em vez de
+          repetido em cada dia. */}
+      {avisoDoDia && (
+        <p className="mb-3 flex items-center gap-2 rounded-xl border border-ouro-500/30 bg-ouro-500/[0.08] px-3.5 py-2 text-[12px] text-ouro-200">
+          <Relogio /> {avisoDoDia}
+        </p>
+      )}
 
-          return (
-            <section
-              key={d.key}
-              className={
-                "cartao animate-surgir overflow-hidden " + (aberto ? "" : "opacity-60")
-              }
-              style={{ animationDelay: `${i * 35}ms` }}
+      {/* Grade compacta: os nomes das refeições aparecem uma vez no topo,
+          em vez de 21 vezes. Cabe na tela sem rolar. */}
+      <div className="cartao overflow-hidden">
+        <div className="grid grid-cols-[1fr_repeat(3,3.25rem)] border-b border-white/[0.07] bg-white/[0.02] px-3 py-1.5">
+          <span />
+          {REFEICOES.map((r) => (
+            <span
+              key={r.key}
+              className="text-center text-[10px] font-semibold uppercase tracking-wider text-noite-300"
             >
-              <div className="flex items-center justify-between border-b border-white/[0.07] px-4 py-2.5">
-                <div className="flex items-baseline gap-2.5">
-                  <span
-                    className={
-                      "font-titulo text-lg font-semibold uppercase tracking-wide " +
-                      (!aberto ? "text-noite-300" : fds ? "text-ouro-300" : "text-white")
-                    }
-                  >
-                    {d.label}
-                  </span>
-                  <span className="text-xs tabular-nums text-noite-300">
-                    {datas[d.key].curta}
-                  </span>
-                  {marcadasNoDia > 0 && (
+              {r.label}
+            </span>
+          ))}
+        </div>
+
+        <div className="divide-y divide-white/[0.06]">
+          {DIAS.map((d, i) => {
+            const fds = d.key === "sab" || d.key === "dom";
+            const aberto = editavel(d.key);
+            const marcadasNoDia = REFEICOES.filter((r) => marcacoes[d.key][r.key]).length;
+
+            return (
+              <div
+                key={d.key}
+                className={
+                  "grid animate-surgir grid-cols-[1fr_repeat(3,3.25rem)] items-stretch " +
+                  (aberto ? "" : "opacity-45")
+                }
+                style={{ animationDelay: `${i * 30}ms` }}
+              >
+                {/* O nome do dia marca as três de uma vez. */}
+                <button
+                  onClick={() => marcarTodas(d.key)}
+                  disabled={!aberto}
+                  className={
+                    "flex flex-col justify-center px-3.5 py-2 text-left transition " +
+                    (aberto ? "hover:bg-white/[0.04]" : "cursor-not-allowed")
+                  }
+                >
+                  <span className="flex items-center gap-1.5">
                     <span
                       className={
-                        "h-1.5 w-1.5 rounded-full " + (aberto ? "bg-ouro-400" : "bg-noite-400")
+                        "font-titulo text-[15px] font-semibold uppercase leading-none tracking-wide " +
+                        (!aberto ? "text-noite-300" : fds ? "text-ouro-300" : "text-white")
                       }
-                    />
-                  )}
-                </div>
-
-                {aberto ? (
-                  <button
-                    onClick={() => marcarTodas(d.key)}
-                    className="rounded-lg px-2 py-1 text-[11px] font-medium uppercase tracking-wider text-noite-300 transition hover:bg-white/5 hover:text-ouro-300"
-                  >
-                    Dia inteiro
-                  </button>
-                ) : (
-                  <span className="flex items-center gap-1 text-[11px] font-medium uppercase tracking-wider text-noite-400">
-                    <Cadeado /> Fechado
+                    >
+                      {d.label}
+                    </span>
+                    {!aberto && <Cadeado />}
                   </span>
-                )}
-              </div>
+                  <span className="mt-0.5 flex items-center gap-1.5 text-[11px] tabular-nums text-noite-400">
+                    {datas[d.key].curta}
+                    {marcadasNoDia > 0 && (
+                      <span
+                        className={
+                          "inline-block h-1 w-1 rounded-full " +
+                          (aberto ? "bg-ouro-400" : "bg-noite-400")
+                        }
+                      />
+                    )}
+                  </span>
+                </button>
 
-              {aberto && (fechaHoje || naSexta) && (
-                <p className="border-b border-white/[0.07] bg-ouro-500/[0.07] px-4 py-1.5 text-[11px] text-ouro-300">
-                  {fechaHoje
-                    ? "Fecha hoje às " + horaLimiteEscrita(d.key)
-                    : "Fecha na sexta às " + LIMITE_FDS_ESCRITO}
-                </p>
-              )}
-
-              <div className="grid grid-cols-3 gap-px bg-white/[0.06]">
                 {REFEICOES.map((r) => {
                   const ativo = marcacoes[d.key][r.key];
                   return (
                     <button
                       key={r.key}
                       onClick={() => alternar(d.key, r.key)}
-                      aria-pressed={ativo}
                       disabled={!aberto}
+                      aria-pressed={ativo}
+                      aria-label={`${d.label} ${datas[d.key].curta}, ${r.label}`}
                       className={
-                        "flex flex-col items-center gap-1.5 py-3.5 transition " +
+                        "flex items-center justify-center border-l border-white/[0.06] transition " +
                         (ativo
-                          ? "bg-ouro-500/[0.16] text-ouro-200"
-                          : "bg-noite-900/40 text-noite-300") +
-                        (aberto
-                          ? ativo
-                            ? ""
-                            : " hover:bg-white/[0.04]"
-                          : " cursor-not-allowed")
+                          ? "bg-ouro-500/[0.16] shadow-[inset_0_0_0_1px_rgba(220,184,69,0.35)]"
+                          : "bg-noite-950/30") +
+                        (aberto ? " hover:bg-white/[0.05]" : " cursor-not-allowed")
                       }
                     >
                       <IconeRefeicao tipo={r.key} ativo={ativo} />
-                      <span
-                        className={
-                          "text-xs uppercase tracking-wider " + (ativo ? "font-semibold" : "")
-                        }
-                      >
-                        {r.label}
-                      </span>
                     </button>
                   );
                 })}
               </div>
-            </section>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
+
+      <p className="mt-2 px-1 text-[11px] text-noite-400">
+        Toque no nome do dia para marcar as três refeições de uma vez.
+      </p>
 
       <div className="mt-4 space-y-2">
         {!dataConfirmada && (
@@ -433,6 +443,15 @@ function Alerta() {
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M12 3 2 20h20L12 3Z" />
       <path d="M12 10v4M12 17.5v.01" />
+    </svg>
+  );
+}
+
+function Relogio() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
     </svg>
   );
 }
