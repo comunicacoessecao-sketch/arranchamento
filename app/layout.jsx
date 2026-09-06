@@ -17,6 +17,12 @@ const titulo = Barlow_Condensed({
 export const metadata = {
   title: "Arranchamento — Seção de Comunicações",
   description: "Arranchamento semanal da Seção de Comunicações",
+  // Faz o iPhone abrir em tela cheia quando o site esta na tela inicial.
+  appleWebApp: {
+    capable: true,
+    title: "Arranchamento",
+    statusBarStyle: "black-translucent",
+  },
 };
 
 export const viewport = {

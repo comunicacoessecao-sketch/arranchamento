@@ -24,6 +24,7 @@ export default function Painel() {
   const [autorizado, setAutorizado] = useState(false);
   const [carregando, setCarregando] = useState(true);
   const [militares, setMilitares] = useState([]);
+  const [autorizados, setAutorizados] = useState([]);
   const [marcacoes, setMarcacoes] = useState({});
   const [diaAtivo, setDiaAtivo] = useState(PRIMEIRO_DIA);
   // 0 = o periodo que os militares estao preenchendo agora.
@@ -82,6 +83,14 @@ export default function Painel() {
     const { data: lista } = await supabase.from("militares").select("*");
     setMilitares(lista || []);
 
+    // A relação inteira: e contra ela que o acompanhamento faz sentido.
+    // So o administrador consegue le-la (regra no banco).
+    const { data: relacao, error: erroRelacao } = await supabase
+      .from("autorizados")
+      .select("identificador, numero_guerra, nome, posto_grad, categoria, ordem");
+    if (erroRelacao) console.error("autorizados:", erroRelacao);
+    setAutorizados(relacao || []);
+
     const { data: linhas } = await supabase
       .from("arranchamentos")
       .select("*")
@@ -116,11 +125,23 @@ export default function Painel() {
   if (carregando || !autorizado || !datas) return <Carregando />;
 
   const { linhas, soma } = calcularTotais(militares, marcacoes, diaAtivo);
+  // A conta certa e contra a RELAÇÃO da seção, nao contra quem ja criou
+  // acesso — senao "18 de 20" parece otimo enquanto 165 pessoas nem entraram
+  // no sistema. São dois problemas diferentes, e por isso duas listas.
+  const idsComAcesso = new Set(militares.map((m) => m.identificador).filter(Boolean));
+  const semAcesso = autorizados
+    .filter((a) => !idsComAcesso.has(a.identificador))
+    .sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
+
   const semResposta = militares.filter((m) => !marcacoes[m.id]);
   const responderam = militares.length - semResposta.length;
-  const percentual = militares.length
-    ? Math.round((responderam / militares.length) * 100)
-    : 0;
+  // Se a relação ainda nao foi carregada, cai no que da para saber.
+  const esperado = autorizados.length || militares.length;
+  const percentual = esperado ? Math.round((responderam / esperado) * 100) : 0;
+
+  const rotuloAutorizado = (a) =>
+    [a.posto_grad, a.nome].filter(Boolean).join(" ") ||
+    (a.numero_guerra ? `Nº ${a.numero_guerra}` : a.identificador);
 
   return (
     <main className="mx-auto w-full max-w-2xl px-4 pb-16 pt-7">
@@ -262,39 +283,51 @@ export default function Painel() {
         <Erro texto={erroExport} />
       </div>
 
-      {/* Quem falta responder */}
+      {/* Situacao da relacao */}
       <section className="mt-8">
         <div className="mb-3 flex items-end justify-between">
           <h2 className="font-titulo text-lg font-semibold uppercase tracking-wide text-white">
-            Ainda não responderam
+            Situação da relação
           </h2>
           <span className="text-sm tabular-nums text-noite-300">
-            {responderam}/{militares.length}
+            {responderam} de {esperado}
           </span>
         </div>
 
-        <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-white/[0.07]">
+        <div className="mb-2 h-1.5 overflow-hidden rounded-full bg-white/[0.07]">
           <div
             className="h-full rounded-full bg-gradient-to-r from-ouro-500 to-ouro-300 transition-all"
             style={{ width: `${percentual}%` }}
           />
         </div>
+        <p className="mb-4 text-[11px] text-noite-400">
+          {autorizados.length
+            ? `${responderam} enviaram · ${semResposta.length} com acesso não enviaram · ${semAcesso.length} nunca criaram acesso`
+            : "Não consegui ler a relação de autorizados — os números abaixo contam só quem já criou acesso."}
+        </p>
 
-        {semResposta.length === 0 ? (
-          <p className="cartao px-4 py-3.5 text-sm text-ouro-200">
-            Todos os militares cadastrados já enviaram.
-          </p>
-        ) : (
-          <ul className="cartao divide-y divide-white/[0.06] overflow-hidden">
-            {semResposta.map((m) => (
-              <li key={m.id} className="flex items-center justify-between px-4 py-2.5 text-sm">
-                <span className="text-noite-100">{nomeExibicao(m)}</span>
-                <span className="rounded-md border border-white/10 px-2 py-0.5 text-[11px] uppercase tracking-wider text-noite-300">
-                  {m.categoria}
-                </span>
-              </li>
-            ))}
-          </ul>
+        <ListaDePendencia
+          titulo="Não responderam"
+          descricao="Já têm acesso, mas não enviaram nada neste período."
+          vazio="Todos que têm acesso já enviaram."
+          itens={semResposta.map((m) => ({
+            chave: m.id,
+            nome: nomeExibicao(m),
+            etiqueta: m.categoria,
+          }))}
+        />
+
+        {autorizados.length > 0 && (
+          <ListaDePendencia
+            titulo="Nunca criaram acesso"
+            descricao="Estão na relação da seção mas ainda não entraram no site."
+            vazio="Toda a relação já criou acesso."
+            itens={semAcesso.map((a) => ({
+              chave: a.identificador,
+              nome: rotuloAutorizado(a),
+              etiqueta: a.categoria,
+            }))}
+          />
         )}
       </section>
     </main>
@@ -317,6 +350,39 @@ function Indicador({ rotulo, valor, destaque }) {
         {valor}
       </p>
       <p className="mt-1 text-[10px] uppercase tracking-wider text-noite-300">{rotulo}</p>
+    </div>
+  );
+}
+
+// Lista de pendencia com altura limitada: a de "nunca criaram acesso" pode
+// ter mais de cem nomes no comeco, e nao pode empurrar a pagina inteira.
+function ListaDePendencia({ titulo, descricao, vazio, itens }) {
+  return (
+    <div className="mb-4">
+      <div className="mb-1.5 flex items-baseline justify-between gap-2">
+        <h3 className="font-titulo text-sm font-semibold uppercase tracking-wider text-ouro-400">
+          {titulo}
+        </h3>
+        <span className="text-sm font-semibold tabular-nums text-noite-200">
+          {itens.length}
+        </span>
+      </div>
+      <p className="mb-2 text-[11px] leading-snug text-noite-400">{descricao}</p>
+
+      {itens.length === 0 ? (
+        <p className="cartao px-4 py-3 text-sm text-ouro-200">{vazio}</p>
+      ) : (
+        <ul className="rolagem-fina cartao max-h-72 divide-y divide-white/[0.06] overflow-y-auto">
+          {itens.map((i) => (
+            <li key={i.chave} className="flex items-center justify-between px-4 py-2.5 text-sm">
+              <span className="text-noite-100">{i.nome}</span>
+              <span className="shrink-0 rounded-md border border-white/10 px-2 py-0.5 text-[11px] uppercase tracking-wider text-noite-300">
+                {i.etiqueta}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

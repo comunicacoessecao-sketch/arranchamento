@@ -105,6 +105,17 @@ npm test
 
 ---
 
+## Atalho na tela do celular
+
+O site pode virar um ícone na tela inicial, abrindo em tela cheia — sem barra
+de endereço e sem ninguém precisar lembrar do link.
+
+- **Android (Chrome):** menu ⋮ → *Instalar aplicativo* (ou *Adicionar à tela
+  inicial*).
+- **iPhone (Safari):** botão Compartilhar → *Adicionar à Tela de Início*.
+
+O ícone é o emblema que está em `public/emblema.png` — o mesmo do site.
+
 ## Como funciona no dia a dia
 
 **Para o militar:** abre o link no celular, entra com a identificação (número
