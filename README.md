@@ -115,20 +115,22 @@ fechar a semana.
 
 ## O período de arranchamento
 
-O período vai de **terça a segunda** — o mesmo que o papel entregue na segunda
-de manhã cobre. O site troca de período sozinho, na madrugada de segunda para
-terça:
+O período vai de **terça a segunda**, e a seção monta um papel novo toda
+**segunda-feira**. Esse papel fica em circulação o período inteiro: sai às 10h,
+volta às 14h, a seção passa os dados para a planilha do Rancho e entrega até as
+16h — e o papel volta para a mesa. Isso se repete todo dia até a segunda
+seguinte, quando nasce o papel do período novo.
 
-| Se hoje é | O militar preenche |
+O site segue a mesma lógica: **vira na segunda-feira** e deixa o período aberto
+para alteração enquanto ele corre.
+
+| Se hoje é | O militar edita |
 |---|---|
-| domingo 06/09 | terça 08/09 a segunda 14/09 |
-| **segunda 07/09** | terça 08/09 a segunda 14/09 |
-| terça 08/09 | terça 15/09 a segunda 21/09 |
-| … até segunda 14/09 | terça 15/09 a segunda 21/09 |
-
-Ou seja: o militar tem a semana inteira para preencher o período seguinte, e a
-segunda-feira é o último dia — igual à rotina do papel, só que com uma semana
-de antecedência disponível.
+| domingo 06/09 | terça 01/09 a segunda 07/09 |
+| **segunda 07/09** | terça 08/09 a segunda 14/09 ← período novo |
+| terça 08/09 | terça 08/09 a segunda 14/09 |
+| … até domingo 13/09 | terça 08/09 a segunda 14/09 |
+| **segunda 14/09** | terça 15/09 a segunda 21/09 ← período novo |
 
 **A data vem do servidor**, não do relógio do aparelho. Um celular com a data
 errada mandaria o arranchamento para o período errado; por isso o site pergunta
@@ -137,7 +139,9 @@ o servidor não responder, ele usa o relógio do aparelho e avisa na tela.
 
 O administrador vê o mesmo período no Painel, com **← Anterior** e
 **Próxima →** para consultar ou baixar a planilha de qualquer período, inclusive
-os já passados.
+os já passados. Como a seção exporta todo dia por volta das 14h, o botão de
+baixar a planilha pode ser usado quantas vezes for preciso — ele sempre reflete
+o que está marcado naquele momento.
 
 Para mudar o dia da virada, mexa em `inicioPeriodo()` e na ordem de `DIAS`, em
 `lib/semana.js`.
