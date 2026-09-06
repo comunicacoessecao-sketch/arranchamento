@@ -6,6 +6,10 @@
 #
 # Formato: número, um espaço, nome. Linhas com # são ignoradas.
 # Para incluir ou corrigir alguém, edite aqui e rode: npm run autorizados
+#
+# Os números 442 e 481 existem na planilha do Rancho mas NÃO TÊM NOME —
+# confirmado pela seção. Aparecem no site como "SD 442" e "SD 481". Não é
+# transcrição faltando.
 
 401 ADELAR
 402 SALDANHA
