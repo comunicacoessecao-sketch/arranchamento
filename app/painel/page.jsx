@@ -16,7 +16,7 @@ import {
   rotuloDoDia,
 } from "@/lib/semana";
 import { relogioDoServidor } from "@/lib/hoje";
-import { calcularTotais, baixarExcel } from "@/lib/exportar";
+import { calcularTotais, baixarExcel, efetivoParaPlanilha } from "@/lib/exportar";
 import { Cabecalho, LinkTopo, Carregando, Erro } from "@/components/ui";
 
 export default function Painel() {
@@ -87,7 +87,7 @@ export default function Painel() {
     // So o administrador consegue le-la (regra no banco).
     const { data: relacao, error: erroRelacao } = await supabase
       .from("autorizados")
-      .select("identificador, numero_guerra, nome, posto_grad, categoria, ordem");
+      .select("identificador, numero_guerra, nome, posto_grad, categoria, bloco, ordem");
     if (erroRelacao) console.error("autorizados:", erroRelacao);
     setAutorizados(relacao || []);
 
@@ -109,11 +109,15 @@ export default function Painel() {
     carregar();
   }, [carregar]);
 
+  // A planilha e os totais saem da relacao inteira, nao so de quem tem
+  // acesso: todo o efetivo aparece, e o que muda sao os X.
+  const { pessoas, marcas } = efetivoParaPlanilha(autorizados, militares, marcacoes);
+
   async function baixar(escolhidos) {
     setErroExport("");
     setGerando(true);
     try {
-      await baixarExcel(militares, marcacoes, inicio, escolhidos);
+      await baixarExcel(pessoas, marcas, inicio, escolhidos);
     } catch (e) {
       console.error(e);
       setErroExport("Não foi possível gerar a planilha. Tente de novo ou avise o responsável.");
@@ -124,7 +128,7 @@ export default function Painel() {
 
   if (carregando || !autorizado || !datas) return <Carregando />;
 
-  const { linhas, soma } = calcularTotais(militares, marcacoes, diaAtivo);
+  const { linhas, soma } = calcularTotais(pessoas, marcas, diaAtivo);
   // A conta certa e contra a RELAÇÃO da seção, nao contra quem ja criou
   // acesso — senao "18 de 20" parece otimo enquanto 165 pessoas nem entraram
   // no sistema. São dois problemas diferentes, e por isso duas listas.

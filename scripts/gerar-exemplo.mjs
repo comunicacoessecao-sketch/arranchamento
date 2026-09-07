@@ -1,7 +1,7 @@
 // Gera uma planilha de exemplo com um efetivo parecido com o real, para
 // conferir o layout sem precisar abrir o site.
 import ExcelJS from "exceljs";
-import { montarPasta } from "../lib/exportar.js";
+import { montarPasta, efetivoParaPlanilha } from "../lib/exportar.js";
 
 const OFICIAIS = [
   ["CAP", "SIQUEIRA", "101"],
@@ -45,12 +45,15 @@ const SD_EP = [
   ["268", "CHRISOSTOMO"], ["271", "BRUSCHI"], ["275", "PAULO"],
 ];
 
-const militares = [];
+// A relação inteira da seção — é ela que vai para a planilha, com todos os
+// nomes sempre, tenham ou não criado acesso no site.
+const autorizados = [];
 let n = 0;
 const novo = (extra) => {
+  n += 1;
   // "ordem" imita a posicao na relacao do formulario, que e o que ordena
   // oficiais e graduados — eles nao tem numero de guerra.
-  militares.push({ id: `m${++n}`, ordem: n, ...extra });
+  autorizados.push({ identificador: `i${n}`, ordem: n, ...extra });
 };
 
 // De sargento para cima nao ha numero de guerra — so nome de guerra.
@@ -94,11 +97,18 @@ const sorteio = () => {
   return semente / 2147483648;
 };
 
+// Só uma parte do efetivo criou acesso no site. O resto tem que aparecer
+// na planilha assim mesmo, com a linha em branco — é o caso que mais
+// importa conferir aqui.
+const militares = [];
 const marcacoes = {};
-militares.forEach((m) => {
-  marcacoes[m.id] = {};
+autorizados.forEach((a, i) => {
+  if (i % 3 !== 0) return; // um em cada três
+  const id = `uuid-${i}`;
+  militares.push({ id, identificador: a.identificador });
+  marcacoes[id] = {};
   DIAS.forEach((d) => {
-    marcacoes[m.id][d] = {
+    marcacoes[id][d] = {
       cafe: sorteio() > 0.45,
       almoco: sorteio() > 0.3,
       janta: sorteio() > 0.6,
@@ -107,10 +117,11 @@ militares.forEach((m) => {
 });
 
 const inicio = new Date(2026, 8, 8); // terça 08/09/2026, abre o período
-const { pasta } = montarPasta(ExcelJS, militares, marcacoes, inicio);
+const { pessoas, marcas } = efetivoParaPlanilha(autorizados, militares, marcacoes);
+const { pasta } = montarPasta(ExcelJS, pessoas, marcas, inicio);
 
 const destino = process.argv[2];
 await pasta.xlsx.writeFile(destino);
 console.log(`gerado: ${destino}`);
-console.log(`militares: ${militares.length}`);
+console.log(`relação: ${autorizados.length} · com acesso: ${militares.length}`);
 

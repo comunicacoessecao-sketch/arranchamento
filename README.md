@@ -232,6 +232,10 @@ O botão **Baixar planilha da semana** gera um `.xlsx` com **uma aba por dia**
 Os dados da OM (seção, companhia, cidade, quem assina) ficam em `lib/modelo.js`
 — é lá que se muda, não no código do export.
 
+**A relação nominal traz sempre todo o efetivo.** Os nomes saem da relação de
+autorizados, não de quem criou acesso no site: quem nunca entrou continua tendo
+a linha dele, em branco. O que muda de um dia para o outro são só os X.
+
 **Campos que o site não tem** e continuam para preencher à mão: *Outra OM*,
 *QT Ativos*, *Complementos* e *C Esc*.
 

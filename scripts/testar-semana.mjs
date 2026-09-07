@@ -257,3 +257,48 @@ test("no site, todo militar sai identificável", () => {
   }
   assert.equal(nomeExibicao(null), "");
 });
+
+test("a planilha traz todo o efetivo, mesmo quem não se arranchou", async () => {
+  // A relação nominal do Rancho é fixa: aparecem todos, e o que muda de um
+  // dia para o outro são só os X. Antes a planilha saía com as linhas de
+  // quem tinha conta no site, e o resto em branco.
+  const ExcelJS = (await import("exceljs")).default;
+  const { montarPasta, efetivoParaPlanilha } = await import("../lib/exportar.js");
+
+  const autorizados = [
+    { identificador: "borges", numero_guerra: null, nome: "BORGES", posto_grad: "3º SGT", categoria: "Subten/Sgt", bloco: "subtenSgt", ordem: 1 },
+    { identificador: "106", numero_guerra: "106", nome: "CARVALHO", posto_grad: "CB", categoria: "Cabo/Sd", bloco: "cabo", ordem: 2 },
+    { identificador: "231", numero_guerra: "231", nome: "LEONAN", posto_grad: "SD", categoria: "Cabo/Sd", bloco: "sdEp", ordem: 3 },
+    { identificador: "409", numero_guerra: "409", nome: "SUTIL", posto_grad: "SD", categoria: "Cabo/Sd", bloco: "sdEv", ordem: 4 },
+  ];
+  // Só um deles criou acesso, e só ele marcou alguma coisa.
+  const militares = [{ id: "uuid-1", identificador: "231" }];
+  const marcacoes = { "uuid-1": { ter: { cafe: true, almoco: false, janta: false } } };
+
+  const { pessoas, marcas } = efetivoParaPlanilha(autorizados, militares, marcacoes);
+  assert.equal(pessoas.length, 4, "todos entram na planilha");
+
+  const { pasta } = montarPasta(ExcelJS, pessoas, marcas, TER, ["ter"]);
+  const aba = pasta.worksheets[0];
+
+  const conteudo = [];
+  aba.eachRow((linha) =>
+    linha.eachCell((celula) => {
+      try {
+        conteudo.push(String(celula.text ?? ""));
+      } catch {
+        /* célula mesclada vazia */
+      }
+    })
+  );
+  const texto = conteudo.join("|");
+
+  // Aparecem os quatro, mesmo os três que nunca tocaram no site.
+  assert.ok(texto.includes("3º SGT BORGES"), "graduado sem acesso");
+  assert.ok(texto.includes("106 CARVALHO"), "cabo sem acesso");
+  assert.ok(texto.includes("LEONAN"), "SD EP que marcou");
+  assert.ok(conteudo.includes("409"), "SD EV sem acesso, pelo número");
+
+  // E só quem marcou tem X: um único X na aba inteira.
+  assert.equal(conteudo.filter((c) => c === "X").length, 1);
+});
